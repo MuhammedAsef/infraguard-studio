@@ -4,8 +4,6 @@
 
 Dockerfile, Kubernetes manifest, Docker Compose ve Terraform dosyalarındaki güvenlik açıklarını anında tespit eden, geliştiricinin anlayacağı dilde açıklayan ve düzeltme önerileri sunan açık kaynak DevSecOps aracı.
 
-![InfraGuard Studio Screenshot](docs/screenshot.png)
-
 ## 🎯 Projenin Amacı
 
 DevSecOps'un en önemli prensiplerinden biri **Shift-Left Security** — yani güvenliği yazılım geliştirme yaşam döngüsünün en erken aşamasına çekmek. Kod henüz production'a deploy edilmeden, hatta merge edilmeden önce güvenlik açıklarını yakalamak.
@@ -47,8 +45,8 @@ Checkov gibi güçlü açık kaynak araçlar var ama CLI çıktıları junior/or
 
 ### DevSecOps
 - **Sandbox isolation** — UUID temp dizinler, sabit dosya adları
-- **subprocess güvenliği** — `shell=False`, allowlisted arguments, minimal env
-- **Async concurrency** — `asyncio.Semaphore` ile yük yönetimi
+- **subprocess güvenliği** — shell=False, allowlisted arguments, minimal env
+- **Async concurrency** — asyncio.Semaphore ile yük yönetimi
 
 ## 📦 Kurulum
 
@@ -58,64 +56,59 @@ Checkov gibi güçlü açık kaynak araçlar var ama CLI çıktıları junior/or
 - Node.js 20+
 - npm
 
-### Backend
+### Backend Kurulumu
 
-\`\`\`bash
-cd backend
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --port 8000
-\`\`\`
+    cd backend
+    pip install -r requirements.txt
+    python -m uvicorn app.main:app --reload --port 8000
 
-Backend çalışıyor: `http://localhost:8000`
-API docs (Swagger): `http://localhost:8000/docs`
+Backend çalışıyor: http://localhost:8000
 
-### Frontend
+API docs (Swagger): http://localhost:8000/docs
 
-\`\`\`bash
-cd frontend
-npm install
-npm run dev
-\`\`\`
+### Frontend Kurulumu
 
-Frontend çalışıyor: `http://localhost:5173`
+    cd frontend
+    npm install
+    npm run dev
+
+Frontend çalışıyor: http://localhost:5173
 
 ## 🏗️ Mimari
 
-\`\`\`
-┌────────────────┐         ┌──────────────────┐         ┌─────────────┐
-│  React + Vite  │ ───────▶│  FastAPI Backend │ ───────▶│   Checkov   │
-│  Monaco Editor │  HTTP   │  (Async)         │ subproc │   (CLI)     │
-└────────────────┘         └──────────────────┘         └─────────────┘
-                                    │
-                                    ▼
-                           ┌──────────────────┐
-                           │   Normalizer     │
-                           │ + Knowledge Base │
-                           │  (TR/EN i18n)    │
-                           └──────────────────┘
-\`\`\`
+    ┌────────────────┐         ┌──────────────────┐         ┌─────────────┐
+    │  React + Vite  │ ──────▶ │  FastAPI Backend │ ──────▶ │   Checkov   │
+    │  Monaco Editor │  HTTP   │     (Async)      │ subproc │    (CLI)    │
+    └────────────────┘         └──────────────────┘         └─────────────┘
+                                        │
+                                        ▼
+                               ┌──────────────────┐
+                               │    Normalizer    │
+                               │ + Knowledge Base │
+                               │   (TR/EN i18n)   │
+                               └──────────────────┘
 
 ### Güvenlik Tasarım Kararları
 
-1. **Dosya adı kullanıcıdan alınmaz** — Path traversal önlemi olarak backend sabit isim verir (`Dockerfile`)
-2. **`shell=False`** — subprocess command injection önlemi
-3. **UUID temp dizinler** — Her tarama izole, bitince `shutil.rmtree` ile silinir
+1. **Dosya adı kullanıcıdan alınmaz** — Path traversal önlemi olarak backend sabit isim verir (Dockerfile)
+2. **shell=False** — subprocess command injection önlemi
+3. **UUID temp dizinler** — Her tarama izole, bitince shutil.rmtree ile silinir
 4. **Timeout** — Max 30 saniye, kaynak tüketimi önlemi
 5. **Boyut limiti** — Max 50KB dosya
-6. **Concurrency** — `asyncio.Semaphore(2)` ile aynı anda max 2 tarama
-7. **`--download-external-modules false`** — SSRF önlemi
+6. **Concurrency** — asyncio.Semaphore(2) ile aynı anda max 2 tarama
+7. **--download-external-modules false** — SSRF önlemi
 8. **Minimal subprocess env** — Ortam değişkeni sızıntısı önlemi
 
 ## 📊 API Endpoint'leri
 
-| Method | Endpoint | Açıklama |
-|--------|----------|----------|
-| POST   | `/api/scan` | IaC dosyasını tara |
-| GET    | `/api/samples` | Hazır demo dosyalarını getir |
-| GET    | `/api/health` | Sağlık kontrolü |
-| GET    | `/api/version` | Scanner versiyonları |
+| Method | Endpoint        | Açıklama                       |
+|--------|-----------------|--------------------------------|
+| POST   | /api/scan       | IaC dosyasını tara             |
+| GET    | /api/samples    | Hazır demo dosyalarını getir   |
+| GET    | /api/health     | Sağlık kontrolü                |
+| GET    | /api/version    | Scanner versiyonları           |
 
-Detaylı API dokümantasyonu için backend çalışırken `http://localhost:8000/docs` adresini ziyaret edin.
+Detaylı API dokümantasyonu için backend çalışırken http://localhost:8000/docs adresini ziyaret edin.
 
 ## 🗺️ Yol Haritası
 
@@ -144,5 +137,7 @@ MIT
 ## 👤 Yazar
 
 **Muhammed Asef**
-DevSecOps Mühendisi
+
+Aspiring DevSecOps Engineer
+
 [LinkedIn](https://www.linkedin.com/in/muhammedasef/) • [GitHub](https://github.com/MuhammedAsef)
