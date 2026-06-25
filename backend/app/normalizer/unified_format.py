@@ -5,9 +5,11 @@ from app.knowledge_base import (
     FALLBACK_RULE,
 )
 from app.config import SEVERITY_WEIGHTS
+from app.fixes.base import get_fix_for_finding
+from app.pipeline_snippets import get_pipeline_snippets
 
 
-def normalize_checkov_results(raw_scan: dict, lang: str = "tr") -> dict:
+def normalize_checkov_results(raw_scan: dict, original_code: str = "", lang: str = "tr") -> dict:
     """
     Checkov'un ham JSON çıktısını, açıklamalı ve skorlanmış
     birleşik formata dönüştür.
@@ -30,8 +32,9 @@ def normalize_checkov_results(raw_scan: dict, lang: str = "tr") -> dict:
             "file_type": file_type,
             "findings": [],
             "summary": _empty_summary(),
-            "risk_score": 100,  # Bulgu yok = tam puan
+            "risk_score": 100,
             "risk_level": "LOW",
+            "pipeline_snippets": get_pipeline_snippets(file_type),
         }
 
     results = raw_results["results"]
@@ -42,6 +45,13 @@ def normalize_checkov_results(raw_scan: dict, lang: str = "tr") -> dict:
     findings = []
     for check in failed_checks:
         finding = _normalize_single_finding(check, file_type, lang)
+
+        # Fix engine'i çağır
+        fixed_code = get_fix_for_finding(
+            file_type, finding["check_id"], original_code, finding
+        )
+        finding["fixed_code"] = fixed_code
+
         findings.append(finding)
 
     # Severity'ye göre sırala: CRITICAL > HIGH > MEDIUM > LOW
@@ -62,6 +72,7 @@ def normalize_checkov_results(raw_scan: dict, lang: str = "tr") -> dict:
         "summary": summary,
         "risk_score": risk_score,
         "risk_level": risk_level,
+        "pipeline_snippets": get_pipeline_snippets(file_type),
     }
 
 

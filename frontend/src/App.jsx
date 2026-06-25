@@ -148,7 +148,13 @@ function App() {
           {/* Sağ: Sonuç paneli */}
           <div>
             <h3 className="text-lg font-semibold mb-3">Güvenlik Raporu</h3>
-            <ResultPanel result={result} isLoading={isLoading} error={error} />
+             <ResultPanel
+              result={result}
+              isLoading={isLoading}
+              error={error}
+              originalCode={code}
+              fileType={fileType}
+            />
           </div>
         </div>
       </main>

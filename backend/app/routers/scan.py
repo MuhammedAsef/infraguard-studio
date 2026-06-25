@@ -68,6 +68,7 @@ class ScanResponse(BaseModel):
     summary: dict
     risk_score: int
     risk_level: str
+    pipeline_snippets: dict
 
 
 @router.post("/scan", response_model=ScanResponse)
@@ -97,8 +98,12 @@ async def scan_code(request: ScanRequest):
                 run_checkov_scan, request.code, request.file_type
             )
 
-            # Normalize et ve zenginleştir
-            result = normalize_checkov_results(raw_scan, lang=request.lang)
+             # Normalize et ve zenginleştir (fix engine için orijinal kod da lazım)
+            result = normalize_checkov_results(
+                raw_scan,
+                original_code=request.code,
+                lang=request.lang,
+            )
 
             return ScanResponse(**result)
 

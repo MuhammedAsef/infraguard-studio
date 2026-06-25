@@ -1,7 +1,8 @@
 import RiskScore from './RiskScore'
 import FindingCard from './FindingCard'
+import PipelineSnippet from './PipelineSnippet'
 
-function ResultPanel({ result, isLoading, error }) {
+function ResultPanel({ result, isLoading, error, originalCode, fileType }) {
   // Yükleniyor durumu
   if (isLoading) {
     return (
@@ -66,6 +67,8 @@ function ResultPanel({ result, isLoading, error }) {
           <p className="text-green-300 font-semibold mb-1">Güvenlik Sorunu Bulunamadı</p>
           <p className="text-slate-400 text-sm">Dosyanız temel güvenlik kontrollerini geçti.</p>
         </div>
+
+        <PipelineSnippet snippets={result.pipeline_snippets} />
       </div>
     )
   }
@@ -77,9 +80,16 @@ function ResultPanel({ result, isLoading, error }) {
 
       <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2">
         {result.findings.map((finding) => (
-          <FindingCard key={finding.check_id + finding.line_start} finding={finding} />
+          <FindingCard
+            key={finding.check_id + finding.line_start}
+            finding={finding}
+            originalCode={originalCode}
+            fileType={fileType}
+          />
         ))}
       </div>
+
+      <PipelineSnippet snippets={result.pipeline_snippets} />
     </div>
   )
 }
