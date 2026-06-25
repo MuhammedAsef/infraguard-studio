@@ -1,6 +1,6 @@
 import asyncio
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, field_validator
 
 from app.config import MAX_CODE_SIZE_BYTES, MAX_CONCURRENT_SCANS, FILE_TYPE_CONFIG
@@ -72,7 +72,7 @@ class ScanResponse(BaseModel):
 
 
 @router.post("/scan", response_model=ScanResponse)
-async def scan_code(request: ScanRequest):
+async def scan_code(scan_request: ScanRequest, request: Request):
     """
     IaC dosyasını güvenlik açısından tara.
 
@@ -95,14 +95,18 @@ async def scan_code(request: ScanRequest):
         try:
             # Scanner'ı thread'e at (subprocess blocking olmasın)
             raw_scan = await asyncio.to_thread(
-                run_checkov_scan, request.code, request.file_type
+                run_checkov_scan, scan_request.code, scan_request.file_type
             )
 
-             # Normalize et ve zenginleştir (fix engine için orijinal kod da lazım)
+            # Client IP'yi yakala (LLM rate limit için)
+            client_ip = request.client.host if request.client else "anonymous"
+
+            # Normalize et ve zenginleştir (fix engine için orijinal kod da lazım)
             result = normalize_checkov_results(
                 raw_scan,
-                original_code=request.code,
-                lang=request.lang,
+                original_code=scan_request.code,
+                lang=scan_request.lang,
+                client_ip=client_ip,
             )
 
             return ScanResponse(**result)
@@ -133,5 +137,73 @@ async def scan_code(request: ScanRequest):
                 detail={
                     "error": "Beklenmeyen bir hata oluştu",
                     "error_code": "INTERNAL_ERROR",
+                },
+            )
+
+from fastapi.responses import Response
+from app.pdf_generator import generate_pdf_report
+
+
+@router.post("/scan/pdf")
+async def scan_to_pdf(scan_request: ScanRequest, request: Request):
+    """
+    Tarama yap ve sonucu PDF olarak döndür.
+    Aynı /api/scan endpoint'i gibi çalışır, sadece çıktı PDF'tir.
+    """
+
+    if _scan_semaphore.locked():
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "Sunucu şu an yoğun. Lütfen birkaç saniye sonra tekrar deneyin.",
+                "error_code": "RATE_LIMITED",
+            },
+        )
+
+    async with _scan_semaphore:
+        try:
+            raw_scan = await asyncio.to_thread(
+                run_checkov_scan, scan_request.code, scan_request.file_type
+            )
+
+            client_ip = request.client.host if request.client else "anonymous"
+
+            result = normalize_checkov_results(
+                raw_scan,
+                original_code=scan_request.code,
+                lang=scan_request.lang,
+                client_ip=client_ip,
+            )
+
+            # PDF üret
+            pdf_bytes = await asyncio.to_thread(generate_pdf_report, result)
+
+            # PDF olarak dön
+            filename = f"infraguard-report-{result['scan_id'][:8]}.pdf"
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": f'attachment; filename="{filename}"',
+                },
+            )
+
+        except ScanTimeoutError:
+            raise HTTPException(
+                status_code=408,
+                detail={
+                    "error": "Tarama zaman aşımına uğradı.",
+                    "error_code": "SCAN_TIMEOUT",
+                },
+            )
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "PDF üretiminde hata oluştu",
+                    "error_code": "PDF_ERROR",
                 },
             )

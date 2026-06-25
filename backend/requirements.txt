@@ -2,3 +2,6 @@ fastapi==0.115.12
 uvicorn==0.34.3
 checkov>=3.2.0
 pydantic>=2.0.0
+openai>=1.30.0
+python-dotenv>=1.0.0
+reportlab>=4.0.0

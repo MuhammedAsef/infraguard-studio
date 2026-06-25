@@ -40,3 +40,33 @@ export async function getSamples() {
   }
   return await response.json()
 }
+
+export async function downloadScanPdf(code, fileType, lang = 'tr') {
+  const response = await fetch(`${API_BASE_URL}/scan/pdf`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, file_type: fileType, lang }),
+  })
+
+  if (!response.ok) {
+    throw new Error('PDF üretilemedi')
+  }
+
+  // Response'u Blob olarak al
+  const blob = await response.blob()
+
+  // Dosya adını response header'dan çek
+  const contentDisposition = response.headers.get('Content-Disposition') || ''
+  const match = contentDisposition.match(/filename="(.+)"/)
+  const filename = match ? match[1] : 'infraguard-report.pdf'
+
+  // Tarayıcıda indirme tetikle
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
+}

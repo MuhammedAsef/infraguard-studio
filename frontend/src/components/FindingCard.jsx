@@ -28,6 +28,17 @@ function FindingCard({ finding, originalCode, fileType }) {
             <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${style.badge}`}>{style.label}</span>
             <span className="text-xs text-slate-500 font-mono">{finding.check_id}</span>
             <span className="text-xs text-slate-500">• Satır {finding.line_start}{finding.line_end !== finding.line_start && `-${finding.line_end}`}</span>
+            {finding.enriched_by_llm && (
+              <span
+                className="text-xs font-medium px-2 py-0.5 rounded border bg-purple-500/10 text-purple-300 border-purple-500/30 flex items-center gap-1"
+                title="Bu açıklama AI ile dinamik olarak üretildi"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                AI
+              </span>
+            )}
           </div>
           <h4 className="text-white font-semibold">{finding.title}</h4>
         </div>

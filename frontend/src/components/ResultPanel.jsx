@@ -1,8 +1,23 @@
 import RiskScore from './RiskScore'
 import FindingCard from './FindingCard'
 import PipelineSnippet from './PipelineSnippet'
+import { downloadScanPdf } from '../services/api'
+import { useState } from 'react'
 
 function ResultPanel({ result, isLoading, error, originalCode, fileType }) {
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
+
+  async function handleDownloadPdf() {
+    setDownloadingPdf(true)
+    try {
+      await downloadScanPdf(originalCode, fileType, 'tr')
+    } catch (err) {
+      alert('PDF indirilemedi: ' + err.message)
+    } finally {
+      setDownloadingPdf(false)
+    }
+  }
+
   // Yükleniyor durumu
   if (isLoading) {
     return (
@@ -53,11 +68,37 @@ function ResultPanel({ result, isLoading, error, originalCode, fileType }) {
     )
   }
 
+  // PDF indir butonu (her iki sonuç durumunda da kullanılacak)
+  const pdfButton = (
+    <div className="flex justify-end mb-4">
+      <button
+        onClick={handleDownloadPdf}
+        disabled={downloadingPdf}
+        className="flex items-center gap-2 text-sm font-medium bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 disabled:cursor-not-allowed text-white border border-slate-700 px-4 py-2 rounded-lg transition-colors"
+      >
+        {downloadingPdf ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            PDF Hazırlanıyor...
+          </>
+        ) : (
+          <>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            PDF İndir
+          </>
+        )}
+      </button>
+    </div>
+  )
+
   // Tarama tamamlandı ve hiç bulgu yok
   if (result.findings.length === 0) {
     return (
       <div>
         <RiskScore score={result.risk_score} level={result.risk_level} summary={result.summary} />
+        {pdfButton}
         <div className="border border-green-500/30 rounded-lg bg-green-500/5 p-8 text-center">
           <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-green-500/20 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -77,6 +118,7 @@ function ResultPanel({ result, isLoading, error, originalCode, fileType }) {
   return (
     <div>
       <RiskScore score={result.risk_score} level={result.risk_level} summary={result.summary} />
+      {pdfButton}
 
       <div className="space-y-3 max-h-[450px] overflow-y-auto pr-2">
         {result.findings.map((finding) => (

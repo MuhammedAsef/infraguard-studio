@@ -7,9 +7,15 @@ from app.knowledge_base import (
 from app.config import SEVERITY_WEIGHTS
 from app.fixes.base import get_fix_for_finding
 from app.pipeline_snippets import get_pipeline_snippets
+from app.llm_enricher import enrich_finding_with_llm
 
 
-def normalize_checkov_results(raw_scan: dict, original_code: str = "", lang: str = "tr") -> dict:
+def normalize_checkov_results(
+    raw_scan: dict,
+    original_code: str = "",
+    lang: str = "tr",
+    client_ip: str = "anonymous",
+) -> dict:
     """
     Checkov'un ham JSON çıktısını, açıklamalı ve skorlanmış
     birleşik formata dönüştür.
@@ -45,6 +51,29 @@ def normalize_checkov_results(raw_scan: dict, original_code: str = "", lang: str
     findings = []
     for check in failed_checks:
         finding = _normalize_single_finding(check, file_type, lang)
+
+        # LLM zenginleştirme: bilinmeyen kural mı?
+        # FALLBACK_RULE açıklaması varsa, kural knowledge base'de yok demektir
+        if finding["explanation"] == FALLBACK_RULE["explanation_tr"] or \
+           finding["explanation"] == FALLBACK_RULE["explanation_en"]:
+            llm_data = enrich_finding_with_llm(
+                check_id=finding["check_id"],
+                check_name=finding["checkov_name"],
+                file_type=file_type,
+                code_snippet=finding.get("code_snippet", "") or "",
+                client_ip=client_ip,
+            )
+            if llm_data:
+                # LLM cevabıyla zenginleştir
+                finding["title"] = llm_data["title_tr"]
+                finding["explanation"] = llm_data["explanation_tr"]
+                finding["severity"] = llm_data["severity"]
+                finding["category"] = llm_data["category"]
+                finding["enriched_by_llm"] = True
+            else:
+                finding["enriched_by_llm"] = False
+        else:
+            finding["enriched_by_llm"] = False
 
         # Fix engine'i çağır
         fixed_code = get_fix_for_finding(

@@ -46,3 +46,6 @@ desktop.ini
 *.egg
 *.egg-info
 .eggs/
+
+# LLM cache (kişisel, sürekli değişir)
+backend/app/_cache/
