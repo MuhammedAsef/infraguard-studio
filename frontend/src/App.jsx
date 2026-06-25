@@ -2,11 +2,14 @@ import { useState } from 'react'
 import Header from './components/Header'
 import CodeEditor from './components/CodeEditor'
 import ResultPanel from './components/ResultPanel'
-import { scanCode } from './services/api'
 import SampleSelector from './components/SampleSelector'
+import FileTypeSelector from './components/FileTypeSelector'
 import Footer from './components/Footer'
+import { scanCode } from './services/api'
 
-const DEFAULT_CODE = `FROM ubuntu:latest
+// Her dosya tipi için varsayılan kod
+const DEFAULT_CODES = {
+  dockerfile: `FROM ubuntu:latest
 
 RUN apt-get update
 RUN apt-get install -y curl
@@ -19,13 +22,51 @@ USER root
 EXPOSE 8080
 
 CMD ["python", "app.py"]
-`
+`,
+  kubernetes: `apiVersion: v1
+kind: Pod
+metadata:
+  name: web-app
+spec:
+  containers:
+  - name: web
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+    securityContext:
+      privileged: true
+      runAsUser: 0
+`,
+  terraform: `resource "aws_s3_bucket" "data" {
+  bucket = "my-data"
+  acl    = "public-read"
+}
+
+resource "aws_security_group" "web" {
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+`,
+}
 
 function App() {
-  const [code, setCode] = useState(DEFAULT_CODE)
+  const [fileType, setFileType] = useState('dockerfile')
+  const [code, setCode] = useState(DEFAULT_CODES.dockerfile)
   const [result, setResult] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Dosya tipi değişince kodu o tipin varsayılan örneği yap, eski sonucu temizle
+  function handleFileTypeChange(newType) {
+    setFileType(newType)
+    setCode(DEFAULT_CODES[newType])
+    setResult(null)
+    setError(null)
+  }
 
   async function handleScan() {
     if (!code.trim()) {
@@ -38,7 +79,7 @@ function App() {
     setResult(null)
 
     try {
-      const data = await scanCode(code, 'dockerfile', 'tr')
+      const data = await scanCode(code, fileType, 'tr')
       setResult(data)
     } catch (err) {
       setError(err.message || 'Bilinmeyen bir hata oluştu')
@@ -71,6 +112,9 @@ function App() {
           </p>
         </div>
 
+        {/* Dosya tipi sekmeleri */}
+        <FileTypeSelector selected={fileType} onChange={handleFileTypeChange} />
+
         {/* İki sütunlu layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Sol: Editör + Tara butonu */}
@@ -97,8 +141,8 @@ function App() {
                 )}
               </button>
             </div>
-             <SampleSelector onSelect={setCode} />
-            <CodeEditor code={code} onChange={setCode} />
+            <SampleSelector fileType={fileType} onSelect={setCode} />
+            <CodeEditor code={code} onChange={setCode} fileType={fileType} />
           </div>
 
           {/* Sağ: Sonuç paneli */}

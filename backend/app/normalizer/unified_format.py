@@ -1,4 +1,9 @@
-from app.knowledge_base import DOCKERFILE_RULES, FALLBACK_RULE
+from app.knowledge_base import (
+    DOCKERFILE_RULES,
+    KUBERNETES_RULES,
+    TERRAFORM_RULES,
+    FALLBACK_RULE,
+)
 from app.config import SEVERITY_WEIGHTS
 
 
@@ -65,11 +70,14 @@ def _normalize_single_finding(check: dict, file_type: str, lang: str) -> dict:
 
     check_id = check.get("check_id", "UNKNOWN")
 
-    # Knowledge base'den açıklama ve severity al
-    if file_type == "dockerfile":
-        rule_info = DOCKERFILE_RULES.get(check_id, FALLBACK_RULE)
-    else:
-        rule_info = FALLBACK_RULE
+    # Dosya tipine göre doğru knowledge base'i seç
+    rules_map = {
+        "dockerfile": DOCKERFILE_RULES,
+        "kubernetes": KUBERNETES_RULES,
+        "terraform": TERRAFORM_RULES,
+    }
+    rules = rules_map.get(file_type, {})
+    rule_info = rules.get(check_id, FALLBACK_RULE)
 
     # Severity: önce Checkov'un verdiğini al, yoksa bizimkini kullan
     severity = check.get("severity") or rule_info["severity"]

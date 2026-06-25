@@ -53,6 +53,7 @@ def run_checkov_scan(code: str, file_type: str) -> dict:
             sys.executable,
             "-m", "checkov.main",
             "-f", str(file_path),
+            "--framework", ",".join(config["checkov_frameworks"]),
             "--output", "json",
             "--compact",
             "--quiet",
@@ -91,14 +92,22 @@ def run_checkov_scan(code: str, file_type: str) -> dict:
         # Checkov bazen list, bazen dict döner
         parsed = json.loads(stdout)
         if isinstance(parsed, list):
-            # Birden fazla framework sonucu - bizim istediğimizi al
-            raw_results = None
+            # Birden fazla framework sonucu - tüm bulguları birleştir
+            all_failed = []
+            all_passed = []
             for item in parsed:
-                if item.get("check_type") == config["checkov_framework"]:
-                    raw_results = item
-                    break
-            if raw_results is None and len(parsed) > 0:
-                raw_results = parsed[0]
+                item_results = item.get("results", {})
+                all_failed.extend(item_results.get("failed_checks", []))
+                all_passed.extend(item_results.get("passed_checks", []))
+
+            # Birleştirilmiş sonuç döndür
+            raw_results = {
+                "check_type": "combined",
+                "results": {
+                    "failed_checks": all_failed,
+                    "passed_checks": all_passed,
+                },
+            }
         else:
             raw_results = parsed
 

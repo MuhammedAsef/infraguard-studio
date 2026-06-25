@@ -12,12 +12,21 @@ FILE_TYPE_CONFIG = {
     "dockerfile": {
         "filename": "Dockerfile",
         "label": "Dockerfile",
-        "checkov_framework": "dockerfile",
+        "checkov_frameworks": ["dockerfile", "secrets"],
+        "monaco_language": "dockerfile",
     },
-    # Faz 2'de eklenecek:
-    # "kubernetes": { "filename": "manifest.yaml", ... },
-    # "compose": { "filename": "docker-compose.yml", ... },
-    # "terraform": { "filename": "main.tf", ... },
+    "kubernetes": {
+        "filename": "manifest.yaml",
+        "label": "Kubernetes YAML",
+        "checkov_frameworks": ["kubernetes", "secrets"],
+        "monaco_language": "yaml",
+    },
+    "terraform": {
+        "filename": "main.tf",
+        "label": "Terraform",
+        "checkov_frameworks": ["terraform", "secrets"],
+        "monaco_language": "hcl",
+    },
 }
 
 # Severity skorlama ağırlıkları

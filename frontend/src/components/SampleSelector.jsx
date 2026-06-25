@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getSamples } from '../services/api'
 
-function SampleSelector({ onSelect }) {
+function SampleSelector({ fileType, onSelect }) {
   const [samples, setSamples] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -16,7 +16,10 @@ function SampleSelector({ onSelect }) {
       })
   }, [])
 
-  if (loading || samples.length === 0) {
+  // Sadece şu anki dosya tipiyle eşleşen örnekleri filtrele
+  const filteredSamples = samples.filter((s) => s.file_type === fileType)
+
+  if (loading || filteredSamples.length === 0) {
     return null
   }
 
@@ -24,7 +27,7 @@ function SampleSelector({ onSelect }) {
     <div className="mb-4">
       <p className="text-xs text-slate-500 mb-2">Hızlı başlangıç için bir örnek deneyin:</p>
       <div className="flex flex-wrap gap-2">
-        {samples.map((sample) => {
+        {filteredSamples.map((sample) => {
           const isSecure = sample.id.includes('secure')
           return (
             <button

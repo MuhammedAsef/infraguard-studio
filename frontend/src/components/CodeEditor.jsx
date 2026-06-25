@@ -1,6 +1,23 @@
 import Editor from '@monaco-editor/react'
 
-function CodeEditor({ code, onChange, language = 'dockerfile' }) {
+// Dosya tipinden Monaco editor diline çevirme
+const LANGUAGE_MAP = {
+  dockerfile: 'dockerfile',
+  kubernetes: 'yaml',
+  terraform: 'hcl',
+}
+
+// Dosya tipinden editör başlığına çevirme
+const LABEL_MAP = {
+  dockerfile: 'Dockerfile',
+  kubernetes: 'manifest.yaml',
+  terraform: 'main.tf',
+}
+
+function CodeEditor({ code, onChange, fileType = 'dockerfile' }) {
+  const language = LANGUAGE_MAP[fileType] || 'plaintext'
+  const label = LABEL_MAP[fileType] || 'file'
+
   return (
     <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-900">
       {/* Editör üst bar */}
@@ -11,7 +28,7 @@ function CodeEditor({ code, onChange, language = 'dockerfile' }) {
             <div className="w-3 h-3 rounded-full bg-yellow-500/60"></div>
             <div className="w-3 h-3 rounded-full bg-green-500/60"></div>
           </div>
-          <span className="text-xs text-slate-500 ml-2 font-mono">Dockerfile</span>
+          <span className="text-xs text-slate-500 ml-2 font-mono">{label}</span>
         </div>
         <span className="text-xs text-slate-500">
           {code.length} karakter
