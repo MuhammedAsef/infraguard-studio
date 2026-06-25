@@ -38,7 +38,7 @@ function Footer() {
 
         <div className="pt-6 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
           <p className="text-xs text-slate-500">
-            © 2026 Muhammed Asef • DevSecOps Portfolyo Projesi
+            © 2026 Muhammed Asef · v1.0 • DevSecOps Portfolyo Projesi
           </p>
           <p className="text-xs text-slate-500">
             Yapım: <span className="text-cyan-400">React</span> + <span className="text-cyan-400">FastAPI</span>
