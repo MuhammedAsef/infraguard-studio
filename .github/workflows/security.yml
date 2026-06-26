@@ -1,0 +1,125 @@
+name: Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # === 1. GITLEAKS - Secret Scanning ===
+  gitleaks:
+    name: Secret Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Tum commit gecmisini cek
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # === 2. TRIVY - Dependency & Filesystem Scan ===
+  trivy-fs:
+    name: Dependency CVE (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'  # Bilgi amacli; pipeline kirilmasin
+
+      - name: Upload Trivy SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-fs'
+
+  # === 3. HADOLINT - Dockerfile Linting ===
+  hadolint:
+    name: Dockerfile Lint (Hadolint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if Dockerfile exists
+        id: dockerfile_check
+        run: |
+          if [ -f Dockerfile ] || [ -f backend/Dockerfile ] || [ -f frontend/Dockerfile ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "::notice::Repo'da Dockerfile yok; Hadolint atlandi"
+          fi
+
+      - name: Run Hadolint
+        if: steps.dockerfile_check.outputs.found == 'true'
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true
+          failure-threshold: warning
+
+  # === 4. INFRAGUARD SELF-SCAN - Dogfood Pattern ===
+  infraguard-self-scan:
+    name: Self-Scan (InfraGuard via Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov on repo
+        run: |
+          checkov -d . \
+            --framework dockerfile,kubernetes,terraform,secrets \
+            --output cli \
+            --output sarif \
+            --output-file-path console,checkov-results \
+            --soft-fail
+        continue-on-error: true
+
+      - name: Upload Checkov SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results/results_sarif.sarif
+          category: 'checkov-self-scan'
+
+  # === SUMMARY - Tum security job'lari basariliysa ===
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [gitleaks, trivy-fs, hadolint, infraguard-self-scan]
+    if: always()
+    steps:
+      - name: Print summary
+        run: |
+          echo "=== Security Pipeline Sonuclari ==="
+          echo "Gitleaks:    ${{ needs.gitleaks.result }}"
+          echo "Trivy FS:    ${{ needs.trivy-fs.result }}"
+          echo "Hadolint:    ${{ needs.hadolint.result }}"
+          echo "Self-Scan:   ${{ needs.infraguard-self-scan.result }}"

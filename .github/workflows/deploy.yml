@@ -1,7 +1,10 @@
 name: Deploy to Production
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Security Scan"]
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
@@ -10,6 +13,10 @@ jobs:
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
+    # Sadece security pipeline basarili olduysa veya manuel tetiklendiyse calis
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout code
