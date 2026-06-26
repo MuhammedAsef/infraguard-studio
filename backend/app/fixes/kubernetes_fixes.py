@@ -142,7 +142,7 @@ def fix_default_namespace(original_code: str, finding: dict) -> str | None:
 FIX_FUNCTIONS = {
     "CKV_K8S_14": fix_latest_image,
     "CKV_K8S_16": fix_privileged_container,
-    "CKV_K8S_17": fix_privilege_escalation,
-    "CKV_K8S_20": fix_run_as_root,
+    "CKV_K8S_20": fix_privilege_escalation,  # allowPrivilegeEscalation - CKV_K8S_20
+    "CKV_K8S_23": fix_run_as_root,            # runAsNonRoot/runAsUser - CKV_K8S_23
     "CKV_K8S_21": fix_default_namespace,
 }

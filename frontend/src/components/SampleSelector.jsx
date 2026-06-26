@@ -16,7 +16,6 @@ function SampleSelector({ fileType, onSelect }) {
       })
   }, [])
 
-  // Sadece şu anki dosya tipiyle eşleşen örnekleri filtrele
   const filteredSamples = samples.filter((s) => s.file_type === fileType)
 
   if (loading || filteredSamples.length === 0) {
@@ -33,15 +32,25 @@ function SampleSelector({ fileType, onSelect }) {
             <button
               key={sample.id}
               onClick={() => onSelect(sample.code)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-md border transition-colors ${
+              className={`text-xs font-medium px-3 py-1.5 rounded-md border transition-all hover:-translate-y-0.5 ${
                 isSecure
-                  ? 'bg-green-500/10 border-green-500/30 text-green-300 hover:bg-green-500/20'
-                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:border-slate-600'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-500/50'
+                  : 'bg-orange-500/10 border-orange-500/30 text-orange-300 hover:bg-orange-500/20 hover:border-orange-500/50'
               }`}
               title={sample.description}
             >
-              {isSecure && '✓ '}
-              {sample.title}
+              <span className="inline-flex items-center gap-1.5">
+                {isSecure ? (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                )}
+                {sample.title}
+              </span>
             </button>
           )
         })}

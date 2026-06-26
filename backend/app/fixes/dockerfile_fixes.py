@@ -10,20 +10,22 @@ import re
 
 def fix_user_root(original_code: str, finding: dict) -> str | None:
     """
+    CKV_DOCKER_3: USER eksik (container root çalışıyor).
     CKV_DOCKER_8: Son USER root olarak ayarlanmış.
 
-    Çözüm: USER root yerine non-root kullanıcı oluştur ve ona geç.
+    Çözüm:
+    - Eğer "USER root" varsa → non-root user ile değiştir
+    - Eğer hiç USER yoksa → CMD/ENTRYPOINT'ten önce non-root user ekle
     """
     lines = original_code.split("\n")
-    fixed_lines = []
-    user_root_found = False
 
+    # 1. Önce "USER root" var mı kontrol et
+    user_root_found = False
+    fixed_lines = []
     for line in lines:
-        # USER root satırını değiştir
         stripped = line.strip().upper()
         if stripped == "USER ROOT" or stripped.startswith("USER ROOT "):
             user_root_found = True
-            # İndentasyonu koru
             indent = line[: len(line) - len(line.lstrip())]
             fixed_lines.append(f"{indent}# Non-root kullanıcı oluştur ve ona geç")
             fixed_lines.append(f"{indent}RUN addgroup -S appgroup && adduser -S appuser -G appgroup")
@@ -31,7 +33,44 @@ def fix_user_root(original_code: str, finding: dict) -> str | None:
         else:
             fixed_lines.append(line)
 
-    return "\n".join(fixed_lines) if user_root_found else None
+    if user_root_found:
+        return "\n".join(fixed_lines)
+
+    # 2. Hiç USER yoksa, CMD/ENTRYPOINT'ten önce ekle (CKV_DOCKER_3 senaryosu)
+    has_any_user = any(
+        line.strip().upper().startswith("USER ")
+        for line in lines
+    )
+
+    if has_any_user:
+        return None  # USER var ama root değil, başka durum
+
+    # USER hiç yok, ekleyelim
+    fixed_lines = []
+    user_added = False
+    for line in lines:
+        stripped_upper = line.strip().upper()
+        if not user_added and (
+            stripped_upper.startswith("CMD ") or
+            stripped_upper.startswith("CMD[") or
+            stripped_upper.startswith("ENTRYPOINT ") or
+            stripped_upper.startswith("ENTRYPOINT[")
+        ):
+            indent = line[: len(line) - len(line.lstrip())]
+            fixed_lines.append(f"{indent}# Non-root kullanıcı oluştur ve ona geç")
+            fixed_lines.append(f"{indent}RUN addgroup -S appgroup && adduser -S appuser -G appgroup")
+            fixed_lines.append(f"{indent}USER appuser")
+            fixed_lines.append("")
+            user_added = True
+        fixed_lines.append(line)
+
+    if not user_added:
+        # CMD/ENTRYPOINT yok, sonuna ekle
+        fixed_lines.append("")
+        fixed_lines.append("RUN addgroup -S appgroup && adduser -S appuser -G appgroup")
+        fixed_lines.append("USER appuser")
+
+    return "\n".join(fixed_lines)
 
 
 def fix_latest_tag(original_code: str, finding: dict) -> str | None:
@@ -172,9 +211,10 @@ def fix_ssh_port_exposed(original_code: str, finding: dict) -> str | None:
 
 # Check ID → Fix function mapping
 FIX_FUNCTIONS = {
-    "CKV_DOCKER_1": fix_add_to_copy,
-    "CKV_DOCKER_2": fix_missing_healthcheck,
-    "CKV_DOCKER_7": fix_latest_tag,
-    "CKV_DOCKER_8": fix_user_root,
-    "CKV_DOCKER_10": fix_ssh_port_exposed,
+    "CKV_DOCKER_1": fix_ssh_port_exposed,    # CKV_DOCKER_1 = SSH portu (22) açık
+    "CKV_DOCKER_2": fix_missing_healthcheck, # CKV_DOCKER_2 = HEALTHCHECK eksik
+    "CKV_DOCKER_3": fix_user_root,            # CKV_DOCKER_3 = USER yok / root çalışıyor
+    "CKV_DOCKER_4": fix_add_to_copy,          # CKV_DOCKER_4 = ADD yerine COPY
+    "CKV_DOCKER_7": fix_latest_tag,           # CKV_DOCKER_7 = latest tag
+    "CKV_DOCKER_8": fix_user_root,            # CKV_DOCKER_8 = son USER root
 }

@@ -1,26 +1,26 @@
-# Checkov Dockerfile kuralları için açıklama ve severity bilgisi
-# Checkov bazen severity vermez, biz kendimiz atıyoruz
-# + her kurala Türkçe/İngilizce açıklama ekliyoruz
+# Checkov kuralları için Türkçe/İngilizce açıklamalar
+# Resmi Checkov v3 kural listesinden doğrulanmıştır
+# Kaynak: https://github.com/bridgecrewio/checkov/blob/main/docs/5.Policy%20Index/
 
 DOCKERFILE_RULES = {
     "CKV_DOCKER_1": {
-        "severity": "MEDIUM",
-        "category": "Supply Chain",
-        "title_tr": "ADD yerine COPY kullanılmalı",
-        "title_en": "Use COPY instead of ADD",
+        "severity": "HIGH",
+        "category": "Network Security",
+        "title_tr": "SSH portu (22) açık",
+        "title_en": "Port 22 (SSH) is exposed",
         "explanation_tr": (
-            "ADD komutu uzak URL'lerden dosya indirebilir ve tar arşivlerini "
-            "otomatik açabilir. Bu, supply chain saldırılarına kapı açar. "
-            "COPY daha güvenlidir çünkü sadece yerel dosyaları kopyalar."
+            "EXPOSE 22 komutu SSH portunu container'da açar. Container'ların SSH erişimi olmamalı, "
+            "kubectl exec veya docker exec gibi araçlarla erişim sağlanmalı. SSH portu açık container, "
+            "brute-force saldırılarına ve lateral movement riskine açıktır."
         ),
         "explanation_en": (
-            "ADD can download files from remote URLs and auto-extract tar archives, "
-            "which opens the door to supply chain attacks. COPY is safer as it only "
-            "copies local files."
+            "EXPOSE 22 opens the SSH port in the container. Containers should not have SSH access; "
+            "use kubectl exec or docker exec instead. Exposed SSH ports invite brute-force attacks "
+            "and lateral movement risks."
         ),
         "references": [
-            "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#add-or-copy",
-            "CIS Docker Benchmark 4.9",
+            "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-port-22-is-not-exposed",
+            "CIS Docker Benchmark 4.12",
         ],
     },
     "CKV_DOCKER_2": {
@@ -45,55 +45,83 @@ DOCKERFILE_RULES = {
         ],
     },
     "CKV_DOCKER_3": {
-        "severity": "HIGH",
+        "severity": "CRITICAL",
         "category": "Container Hardening",
-        "title_tr": "Tek bir RUN komutunda birden fazla paket yöneticisi komutu var",
-        "title_en": "Multiple package manager commands in single RUN",
+        "title_tr": "USER talimatı eksik - container root olarak çalışıyor",
+        "title_en": "USER instruction missing - container runs as root",
         "explanation_tr": (
-            "apt-get update ve apt-get install komutları ayrı RUN satırlarında olursa, "
-            "Docker layer cache nedeniyle eski paket listesiyle kurulum yapılabilir. "
-            "Bu, bilinen güvenlik açıkları olan eski paketlerin yüklenmesine neden olur."
+            "USER talimatı tanımlanmamışsa container root kullanıcıyla çalışır. "
+            "Bir saldırgan container'a sızarsa root yetkileriyle hareket eder ve "
+            "container escape ile host sisteme erişebilir. Dockerfile'da non-root user "
+            "oluşturulup USER ile ayarlanmalıdır."
         ),
         "explanation_en": (
-            "If apt-get update and install are in separate RUN layers, Docker's layer cache "
-            "may use stale package lists, installing outdated packages with known vulnerabilities."
+            "Without a USER instruction, the container runs as root. "
+            "An attacker compromising the container gains root privileges and may achieve "
+            "container escape to access the host system. Create and switch to a non-root user."
         ),
         "references": [
-            "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#run",
+            "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user",
+            "CIS Docker Benchmark 4.1",
+            "OWASP Docker Security - D04",
         ],
     },
     "CKV_DOCKER_4": {
         "severity": "MEDIUM",
         "category": "Supply Chain",
-        "title_tr": "Güvenilir GPG anahtarı ile paket doğrulaması yapılmalı",
-        "title_en": "Ensure package signature verification with trusted GPG key",
+        "title_tr": "ADD yerine COPY kullanılmalı",
+        "title_en": "Use COPY instead of ADD",
         "explanation_tr": (
-            "Paket yöneticisinden yüklenen paketlerin GPG imzası doğrulanmazsa, "
-            "man-in-the-middle saldırısıyla değiştirilmiş paketler yüklenebilir."
+            "ADD komutu uzak URL'lerden dosya indirebilir ve tar arşivlerini "
+            "otomatik açabilir. Bu, supply chain saldırılarına kapı açar. "
+            "COPY daha güvenlidir çünkü sadece yerel dosyaları kopyalar."
         ),
         "explanation_en": (
-            "Without GPG signature verification, packages could be tampered with "
-            "via man-in-the-middle attacks during download."
+            "ADD can download files from remote URLs and auto-extract tar archives, "
+            "which opens the door to supply chain attacks. COPY is safer as it only "
+            "copies local files."
         ),
         "references": [
-            "CIS Docker Benchmark 4.8",
+            "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#add-or-copy",
+            "CIS Docker Benchmark 4.9",
         ],
     },
     "CKV_DOCKER_5": {
-        "severity": "LOW",
-        "category": "Best Practice",
-        "title_tr": "DOCKERIGNORE dosyası kullanılmalı",
-        "title_en": "Use .dockerignore file",
+        "severity": "MEDIUM",
+        "category": "Supply Chain",
+        "title_tr": "Update komutu RUN içinde tek başına kullanılıyor",
+        "title_en": "Update instruction used alone in RUN",
         "explanation_tr": (
-            ".dockerignore olmadan hassas dosyalar (.env, .git, private key'ler) "
-            "Docker build context'e dahil edilebilir ve image'a sızabilir."
+            "apt-get update gibi update komutları kendi RUN satırında olursa, Docker layer "
+            "cache nedeniyle install komutu farklı bir RUN'da çalıştırıldığında eski paket "
+            "listesi kullanılır. Bu, bilinen güvenlik açıklarına sahip eski paketlerin "
+            "yüklenmesine neden olur. Update ve install aynı RUN içinde olmalıdır."
         ),
         "explanation_en": (
-            "Without .dockerignore, sensitive files (.env, .git, private keys) "
-            "may leak into the Docker build context and final image."
+            "When update commands like apt-get update are in their own RUN line, Docker's "
+            "layer cache may use stale package lists if install runs in a different RUN. "
+            "This installs outdated packages with known vulnerabilities. "
+            "Update and install must be in the same RUN."
         ),
         "references": [
-            "https://docs.docker.com/build/building/context/#dockerignore-files",
+            "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#run",
+        ],
+    },
+    "CKV_DOCKER_6": {
+        "severity": "LOW",
+        "category": "Best Practice",
+        "title_tr": "MAINTAINER yerine LABEL maintainer kullanılmalı",
+        "title_en": "Use LABEL maintainer instead of MAINTAINER",
+        "explanation_tr": (
+            "MAINTAINER talimatı Docker 1.13'den beri deprecated'dır. "
+            "LABEL maintainer=\"...\" daha esnek ve standart bir yaklaşımdır."
+        ),
+        "explanation_en": (
+            "MAINTAINER instruction is deprecated since Docker 1.13. "
+            "LABEL maintainer=\"...\" is the more flexible and standard approach."
+        ),
+        "references": [
+            "https://docs.docker.com/reference/dockerfile/#maintainer-deprecated",
         ],
     },
     "CKV_DOCKER_7": {
@@ -140,65 +168,164 @@ DOCKERFILE_RULES = {
         ],
     },
     "CKV_DOCKER_9": {
-        "severity": "MEDIUM",
-        "category": "Network Security",
-        "title_tr": "Gereksiz port expose edilmemeli",
-        "title_en": "Avoid unnecessary port exposure",
+        "severity": "LOW",
+        "category": "Supply Chain",
+        "title_tr": "APT paket yöneticisi kullanılıyor",
+        "title_en": "APT package manager is being used",
         "explanation_tr": (
-            "İhtiyaç duyulmayan portları EXPOSE etmek saldırı yüzeyini genişletir. "
-            "Sadece uygulamanın gerçekten ihtiyaç duyduğu portları açın."
+            "apt (apt-get'in kullanıcı dostu hali) interaktif kullanım için tasarlanmıştır ve "
+            "stable bir CLI değildir. Script'lerde apt yerine apt-get kullanmak daha güvenlidir, "
+            "ayrıca minimal base image'lar tercih edilmelidir."
         ),
         "explanation_en": (
-            "Exposing unnecessary ports increases the attack surface. "
-            "Only expose ports that the application actually needs."
+            "apt (the user-friendly wrapper for apt-get) is designed for interactive use "
+            "and its CLI is not stable. Use apt-get in scripts and prefer minimal base images."
         ),
         "references": [
-            "CIS Docker Benchmark 4.12",
+            "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-that-apt-isnt-used",
         ],
     },
     "CKV_DOCKER_10": {
-        "severity": "MEDIUM",
-        "category": "Network Security",
-        "title_tr": "EXPOSE ile yalnızca gerekli portlar açılmalı",
-        "title_en": "Only expose necessary ports with EXPOSE",
+        "severity": "LOW",
+        "category": "Best Practice",
+        "title_tr": "WORKDIR absolute path olmalı",
+        "title_en": "WORKDIR must use absolute path",
         "explanation_tr": (
-            "Yaygın servis portlarını (22/SSH, 3389/RDP vb.) expose etmek "
-            "container'a doğrudan uzaktan erişim riski oluşturur."
+            "WORKDIR relatif yol kullanırsa (./app gibi) sonraki komutların hangi dizinde "
+            "çalışacağı belirsizleşir ve build davranışı öngörülemez hale gelir. "
+            "Her zaman absolute path kullanın (/app gibi)."
         ),
         "explanation_en": (
-            "Exposing common service ports (22/SSH, 3389/RDP, etc.) creates "
-            "a risk of direct remote access to the container."
+            "If WORKDIR uses a relative path (like ./app), the working directory for "
+            "subsequent commands becomes ambiguous and build behavior unpredictable. "
+            "Always use absolute paths (like /app)."
         ),
         "references": [
-            "CIS Docker Benchmark 4.12",
+            "https://docs.docker.com/reference/dockerfile/#workdir",
         ],
     },
     "CKV_DOCKER_11": {
         "severity": "LOW",
         "category": "Best Practice",
-        "title_tr": "FROM komutunda alias kullanılmalı",
-        "title_en": "Use alias in FROM instruction",
+        "title_tr": "Multi-stage build'de FROM alias unique olmalı",
+        "title_en": "FROM aliases must be unique in multi-stage builds",
         "explanation_tr": (
-            "Multi-stage build'lerde alias kullanmak (FROM node:18 AS builder) "
-            "Dockerfile okunurluğunu artırır ve yanlış stage'den COPY yapmayı önler."
+            "Aynı alias birden fazla FROM ile kullanılırsa, COPY --from=builder gibi "
+            "komutlar yanlış stage'den dosya kopyalayabilir. Her FROM alias unique olmalıdır."
         ),
         "explanation_en": (
-            "Using aliases in multi-stage builds (FROM node:18 AS builder) "
-            "improves readability and prevents copying from wrong stages."
+            "If the same alias is used in multiple FROM instructions, commands like "
+            "COPY --from=builder may copy from the wrong stage. Each FROM alias must be unique."
         ),
         "references": [
             "https://docs.docker.com/build/building/multi-stage/",
         ],
     },
+    # Graph-based CKV2 kuralları
+    "CKV2_DOCKER_1": {
+        "severity": "MEDIUM",
+        "category": "Container Hardening",
+        "title_tr": "sudo komutu kullanılmamalı",
+        "title_en": "sudo should not be used",
+        "explanation_tr": (
+            "Container içinde sudo kullanmak, root'a privilege escalation imkanı verir. "
+            "Bunun yerine USER ile doğru kullanıcıya geçiş yapılmalıdır. "
+            "sudo bağımlılığı container'ın saldırı yüzeyini de artırır."
+        ),
+        "explanation_en": (
+            "Using sudo inside a container enables privilege escalation to root. "
+            "Switch users with the USER instruction instead. "
+            "sudo dependency also increases the container's attack surface."
+        ),
+        "references": [
+            "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-that-sudo-isnt-used",
+        ],
+    },
+    "CKV2_DOCKER_2": {
+        "severity": "HIGH",
+        "category": "Supply Chain",
+        "title_tr": "curl ile sertifika doğrulaması devre dışı bırakılmış",
+        "title_en": "curl certificate validation disabled",
+        "explanation_tr": (
+            "curl -k veya --insecure ile TLS sertifika doğrulaması devre dışı bırakılırsa, "
+            "man-in-the-middle saldırıları ile değiştirilmiş içerik indirilebilir. "
+            "Sertifika hataları varsa kök sebebi düzeltin, doğrulamayı asla atlamayın."
+        ),
+        "explanation_en": (
+            "Disabling TLS certificate validation with curl -k or --insecure allows "
+            "man-in-the-middle attacks to deliver tampered content. "
+            "Fix the root cause of certificate errors instead of skipping validation."
+        ),
+        "references": [
+            "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-that-certificate-validation-is-not-disabled-with-curl",
+        ],
+    },
+    "CKV2_DOCKER_3": {
+        "severity": "HIGH",
+        "category": "Supply Chain",
+        "title_tr": "wget ile sertifika doğrulaması devre dışı bırakılmış",
+        "title_en": "wget certificate validation disabled",
+        "explanation_tr": (
+            "wget --no-check-certificate ile TLS doğrulaması atlanırsa, indirilen dosyalar "
+            "MITM saldırısıyla değiştirilebilir. Bu özellikle binary indirip çalıştıran "
+            "Dockerfile'larda kritik bir tehdittir."
+        ),
+        "explanation_en": (
+            "Skipping TLS validation with wget --no-check-certificate allows downloaded "
+            "files to be tampered with via MITM attacks. This is critical especially for "
+            "Dockerfiles that download and execute binaries."
+        ),
+        "references": [
+            "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-that-certificate-validation-is-not-disabled-with-wget",
+        ],
+    },
+    "CKV2_DOCKER_7": {
+        "severity": "HIGH",
+        "category": "Supply Chain",
+        "title_tr": "apk --allow-untrusted ile imzasız paket yükleniyor",
+        "title_en": "Packages without trusted signature installed via apk --allow-untrusted",
+        "explanation_tr": (
+            "apk --allow-untrusted GPG imza doğrulamasını atlar. İmzasız paketler "
+            "kötü amaçlı veya değiştirilmiş olabilir. Bu opsiyon production'da asla "
+            "kullanılmamalıdır."
+        ),
+        "explanation_en": (
+            "apk --allow-untrusted bypasses GPG signature verification. Unsigned packages "
+            "may be malicious or tampered. This option should never be used in production."
+        ),
+        "references": [
+            "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-that-packages-with-untrusted-or-missing-signatures-are-not-used-by-apk",
+        ],
+    },
+    "CKV2_DOCKER_8": {
+        "severity": "HIGH",
+        "category": "Supply Chain",
+        "title_tr": "apt-get --allow-unauthenticated ile imzasız paket yükleniyor",
+        "title_en": "Packages without authentication installed via apt-get --allow-unauthenticated",
+        "explanation_tr": (
+            "apt-get --allow-unauthenticated, GPG imza doğrulamasını atlayarak imzasız veya "
+            "şüpheli kaynaklı paketlerin yüklenmesine izin verir. Supply chain saldırılarına "
+            "açık kapı bırakır."
+        ),
+        "explanation_en": (
+            "apt-get --allow-unauthenticated skips GPG signature verification, allowing "
+            "installation of unsigned or untrusted packages. Leaves the door open to "
+            "supply chain attacks."
+        ),
+        "references": [
+            "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-that-packages-with-untrusted-or-missing-signatures-are-not-used-by-apt-get",
+        ],
+    },
 }
 
-# Kubernetes kuralları
+
+# Kubernetes kuralları (resmi Checkov v3 listesinden doğrulanmış)
 KUBERNETES_RULES = {
     "CKV_K8S_8": {
         "severity": "MEDIUM",
         "category": "Observability",
-        "title_tr": "Liveness Probe tanımlanmamış",
-        "title_en": "Liveness Probe is not defined",
+        "title_tr": "Liveness Probe yapılandırılmamış",
+        "title_en": "Liveness Probe should be configured",
         "explanation_tr": (
             "Liveness Probe olmadan Kubernetes pod'un canlı olup olmadığını anlayamaz. "
             "Uygulama deadlock'a girse veya yanıt vermez hale gelse bile pod 'Running' "
@@ -216,8 +343,8 @@ KUBERNETES_RULES = {
     "CKV_K8S_9": {
         "severity": "MEDIUM",
         "category": "Observability",
-        "title_tr": "Readiness Probe tanımlanmamış",
-        "title_en": "Readiness Probe is not defined",
+        "title_tr": "Readiness Probe yapılandırılmamış",
+        "title_en": "Readiness Probe should be configured",
         "explanation_tr": (
             "Readiness Probe olmadan Kubernetes pod'un trafik almaya hazır olup olmadığını "
             "bilemez. Uygulama henüz başlatılmadığında bile pod'a istek gönderilir, "
@@ -236,7 +363,7 @@ KUBERNETES_RULES = {
         "severity": "MEDIUM",
         "category": "Resource Management",
         "title_tr": "CPU request tanımlanmamış",
-        "title_en": "CPU request is not defined",
+        "title_en": "CPU requests should be set",
         "explanation_tr": (
             "CPU request olmadan Kubernetes scheduler pod'un kaynak ihtiyacını bilemez. "
             "Bu, başka pod'ların kaynaklarını çalmaya, 'noisy neighbor' problemine "
@@ -255,7 +382,7 @@ KUBERNETES_RULES = {
         "severity": "HIGH",
         "category": "Resource Management",
         "title_tr": "CPU limit tanımlanmamış",
-        "title_en": "CPU limit is not defined",
+        "title_en": "CPU limits should be set",
         "explanation_tr": (
             "CPU limit olmadan bir container tüm node CPU'sunu tüketebilir. "
             "Bu, aynı node'daki diğer pod'ları yavaşlatır veya çökertir. "
@@ -274,7 +401,7 @@ KUBERNETES_RULES = {
         "severity": "MEDIUM",
         "category": "Resource Management",
         "title_tr": "Memory request tanımlanmamış",
-        "title_en": "Memory request is not defined",
+        "title_en": "Memory requests should be set",
         "explanation_tr": (
             "Memory request olmadan scheduler doğru node atamasını yapamaz. "
             "Pod'lar yetersiz kaynaklı node'lara atanabilir ve OOM (Out of Memory) ile çökebilir."
@@ -291,7 +418,7 @@ KUBERNETES_RULES = {
         "severity": "HIGH",
         "category": "Resource Management",
         "title_tr": "Memory limit tanımlanmamış",
-        "title_en": "Memory limit is not defined",
+        "title_en": "Memory limits should be set",
         "explanation_tr": (
             "Memory limit olmadan bir container node'un tüm RAM'ini tüketebilir. "
             "Bu, aynı node'daki diğer pod'ların OOM ile çökmesine ve "
@@ -308,8 +435,8 @@ KUBERNETES_RULES = {
     "CKV_K8S_14": {
         "severity": "MEDIUM",
         "category": "Supply Chain",
-        "title_tr": "Image tag 'latest' kullanılıyor veya tanımlanmamış",
-        "title_en": "Image tag is 'latest' or not specified",
+        "title_tr": "Image tag fixed değil ('latest' veya boş)",
+        "title_en": "Image tag should be fixed - not latest or blank",
         "explanation_tr": (
             "'latest' tag veya tag eksikliği, deploy sırasında farklı image versiyonlarının "
             "çekilmesine neden olabilir. Bu, build tekrarlanabilirliğini bozar ve rollback'i zorlaştırır. "
@@ -327,8 +454,8 @@ KUBERNETES_RULES = {
     "CKV_K8S_15": {
         "severity": "LOW",
         "category": "Best Practice",
-        "title_tr": "Image pull policy 'Always' olarak ayarlanmamış",
-        "title_en": "Image pull policy is not 'Always'",
+        "title_tr": "Image pull policy 'Always' olmalı",
+        "title_en": "Image pull policy should be 'Always'",
         "explanation_tr": (
             "Image pull policy 'Always' değilse, node'da cache'lenmiş eski image kullanılabilir. "
             "Mutable tag'lerle (örn: latest, stable) çalışırken bu güvenlik güncellemelerinin "
@@ -346,7 +473,7 @@ KUBERNETES_RULES = {
         "severity": "CRITICAL",
         "category": "Container Hardening",
         "title_tr": "Privileged container kullanılıyor",
-        "title_en": "Privileged container is used",
+        "title_en": "Container should not be privileged",
         "explanation_tr": (
             "Privileged container, host'un tüm kernel yeteneklerine erişim sağlar. "
             "Bu, container'dan host'a geçişi (container escape) çok kolaylaştırır. "
@@ -365,47 +492,85 @@ KUBERNETES_RULES = {
     "CKV_K8S_17": {
         "severity": "HIGH",
         "category": "Container Hardening",
-        "title_tr": "Container privilege escalation engellenmemiş",
-        "title_en": "Privilege escalation not prevented",
+        "title_tr": "Host PID namespace paylaşılıyor",
+        "title_en": "Containers share host PID namespace",
+        "explanation_tr": (
+            "hostPID: true ayarı, container'a host'un tüm process'lerini görme ve "
+            "onlarla etkileşim kurma imkanı verir. Bu, /proc üzerinden hassas bilgilerin "
+            "okunmasına ve diğer process'lere müdahaleye yol açabilir."
+        ),
+        "explanation_en": (
+            "hostPID: true allows the container to see and interact with all host processes. "
+            "This can lead to reading sensitive information via /proc and "
+            "interfering with other processes."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+        ],
+    },
+    "CKV_K8S_18": {
+        "severity": "HIGH",
+        "category": "Container Hardening",
+        "title_tr": "Host IPC namespace paylaşılıyor",
+        "title_en": "Containers share host IPC namespace",
+        "explanation_tr": (
+            "hostIPC: true, container'ın host'un inter-process communication mekanizmalarına "
+            "erişmesine izin verir. Shared memory ve message queue'lar üzerinden hassas verilere "
+            "erişim mümkün olabilir."
+        ),
+        "explanation_en": (
+            "hostIPC: true allows the container to access the host's inter-process "
+            "communication mechanisms. Sensitive data may be exposed via shared memory "
+            "and message queues."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+        ],
+    },
+    "CKV_K8S_19": {
+        "severity": "HIGH",
+        "category": "Network Security",
+        "title_tr": "Host network namespace paylaşılıyor",
+        "title_en": "Containers share host network namespace",
+        "explanation_tr": (
+            "hostNetwork: true, container'ı doğrudan host'un network interface'lerine bağlar. "
+            "Bu, container'ın diğer process'lerin trafiğini sniff etmesine, host'taki tüm portları "
+            "kullanmasına ve network isolasyonunu bypass etmesine olanak verir."
+        ),
+        "explanation_en": (
+            "hostNetwork: true connects the container directly to the host's network interfaces. "
+            "This lets the container sniff other processes' traffic, use any port on the host, "
+            "and bypass network isolation."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+        ],
+    },
+    "CKV_K8S_20": {
+        "severity": "HIGH",
+        "category": "Container Hardening",
+        "title_tr": "allowPrivilegeEscalation engellenmemiş",
+        "title_en": "allowPrivilegeEscalation not prevented",
         "explanation_tr": (
             "allowPrivilegeEscalation: true (veya tanımsız), child process'lerin "
             "parent'tan daha fazla yetki almasına izin verir. setuid binary'leri ile "
-            "saldırgan privilege escalation yapabilir."
+            "saldırgan privilege escalation yapabilir. allowPrivilegeEscalation: false olmalı."
         ),
         "explanation_en": (
             "allowPrivilegeEscalation: true (or undefined) allows child processes to gain "
-            "more privileges than the parent. Attackers can use setuid binaries for privilege escalation."
+            "more privileges than the parent. Attackers can use setuid binaries for privilege escalation. "
+            "Set allowPrivilegeEscalation: false."
         ),
         "references": [
             "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
             "CIS Kubernetes Benchmark 5.2.5",
         ],
     },
-    "CKV_K8S_20": {
-        "severity": "CRITICAL",
-        "category": "Container Hardening",
-        "title_tr": "Container root olarak çalışıyor",
-        "title_en": "Container runs as root",
-        "explanation_tr": (
-            "runAsNonRoot: true ayarlanmamışsa container root kullanıcıyla çalışabilir. "
-            "Bir saldırgan container'a sızarsa root yetkileriyle hareket eder, "
-            "bu da privilege escalation ve host kompromizasyonu riskini artırır."
-        ),
-        "explanation_en": (
-            "If runAsNonRoot: true is not set, the container may run as root. "
-            "An attacker compromising the container gains root privileges, "
-            "increasing the risk of privilege escalation and host compromise."
-        ),
-        "references": [
-            "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
-            "CIS Kubernetes Benchmark 5.2.6",
-        ],
-    },
     "CKV_K8S_21": {
         "severity": "MEDIUM",
         "category": "Best Practice",
         "title_tr": "Default namespace kullanılıyor",
-        "title_en": "Default namespace is used",
+        "title_en": "The default namespace should not be used",
         "explanation_tr": (
             "Default namespace kullanmak isolation'ı zayıflatır. "
             "Production workload'lar için ayrı namespace'ler kullanarak RBAC, "
@@ -424,7 +589,7 @@ KUBERNETES_RULES = {
         "severity": "MEDIUM",
         "category": "Container Hardening",
         "title_tr": "Read-only root filesystem kullanılmıyor",
-        "title_en": "Read-only root filesystem is not used",
+        "title_en": "Use read-only filesystem where possible",
         "explanation_tr": (
             "readOnlyRootFilesystem: true ayarlanmamışsa saldırgan container'ın dosya sistemine yazabilir. "
             "Bu, malware indirme, persistent backdoor kurma ve runtime tampering riski oluşturur. "
@@ -440,27 +605,86 @@ KUBERNETES_RULES = {
         ],
     },
     "CKV_K8S_23": {
-        "severity": "MEDIUM",
+        "severity": "HIGH",
         "category": "Container Hardening",
-        "title_tr": "Root group olarak çalışıyor",
-        "title_en": "Runs as root group",
+        "title_tr": "Root container kabul ediliyor (runAsNonRoot eksik)",
+        "title_en": "Minimize admission of root containers",
         "explanation_tr": (
-            "runAsGroup root (0) olarak ayarlanmışsa container root grup yetkileriyle çalışır. "
-            "Root grubun erişebildiği dosyalara da erişim sağlanır, bu da güvenlik riskini artırır."
+            "runAsNonRoot: true ayarlanmamışsa container root kullanıcıyla çalışabilir. "
+            "Bir saldırgan container'a sızarsa root yetkileriyle hareket eder, "
+            "bu da privilege escalation ve host kompromizasyonu riskini artırır."
         ),
         "explanation_en": (
-            "If runAsGroup is set to root (0), the container runs with root group privileges, "
-            "gaining access to files accessible by the root group and increasing security risks."
+            "If runAsNonRoot: true is not set, the container may run as root. "
+            "An attacker compromising the container gains root privileges, "
+            "increasing the risk of privilege escalation and host compromise."
         ),
         "references": [
             "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+            "CIS Kubernetes Benchmark 5.2.6",
+        ],
+    },
+    "CKV_K8S_25": {
+        "severity": "MEDIUM",
+        "category": "Container Hardening",
+        "title_tr": "Eklenen capability'leri olan container kabul ediliyor",
+        "title_en": "Minimize admission of containers with added capability",
+        "explanation_tr": (
+            "Container'a ekstra Linux capability eklemek (SYS_ADMIN, NET_ADMIN vb.) "
+            "saldırı yüzeyini büyütür. Sadece kesinlikle gerekli capability'ler eklenmeli, "
+            "geri kalanlar drop edilmelidir."
+        ),
+        "explanation_en": (
+            "Adding extra Linux capabilities (SYS_ADMIN, NET_ADMIN, etc.) to a container "
+            "increases the attack surface. Only add absolutely necessary capabilities; "
+            "drop the rest."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+        ],
+    },
+    "CKV_K8S_26": {
+        "severity": "MEDIUM",
+        "category": "Network Security",
+        "title_tr": "hostPort kullanılıyor",
+        "title_en": "Do not specify hostPort unless absolutely necessary",
+        "explanation_tr": (
+            "hostPort, container'ın host'un belirli bir portunu doğrudan kullanmasını sağlar. "
+            "Bu, network policy bypass'ına ve aynı host'ta port çakışmasına yol açar. "
+            "Service kullanılması tercih edilmelidir."
+        ),
+        "explanation_en": (
+            "hostPort lets the container directly use a specific host port. This can bypass "
+            "network policies and cause port conflicts on the same host. Prefer using a Service."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/services-networking/",
+        ],
+    },
+    "CKV_K8S_27": {
+        "severity": "CRITICAL",
+        "category": "Container Hardening",
+        "title_tr": "Docker daemon socket container'a expose ediliyor",
+        "title_en": "Do not expose docker daemon socket to containers",
+        "explanation_tr": (
+            "/var/run/docker.sock'ın container içine mount edilmesi, container'a host'taki "
+            "tüm container'ları yönetme yetkisi verir. Bir saldırgan bu socket'e erişirse, "
+            "yeni privileged container başlatarak host'u tamamen ele geçirebilir."
+        ),
+        "explanation_en": (
+            "Mounting /var/run/docker.sock into a container gives it authority to manage all "
+            "containers on the host. An attacker accessing this socket can launch new "
+            "privileged containers and fully compromise the host."
+        ),
+        "references": [
+            "https://docs.docker.com/engine/security/",
         ],
     },
     "CKV_K8S_28": {
         "severity": "HIGH",
         "category": "Container Hardening",
         "title_tr": "NET_RAW capability düşürülmemiş",
-        "title_en": "NET_RAW capability not dropped",
+        "title_en": "Minimize admission of containers with NET_RAW capability",
         "explanation_tr": (
             "NET_RAW capability container'ın raw socket oluşturmasına izin verir. "
             "Bu, ARP spoofing, packet sniffing ve diğer ağ saldırıları için kötüye kullanılabilir. "
@@ -478,8 +702,8 @@ KUBERNETES_RULES = {
     "CKV_K8S_29": {
         "severity": "MEDIUM",
         "category": "Best Practice",
-        "title_tr": "Container için securityContext tanımlanmamış",
-        "title_en": "securityContext not defined for container",
+        "title_tr": "Pod ve container için securityContext tanımlanmamış",
+        "title_en": "Apply security context to pods and containers",
         "explanation_tr": (
             "securityContext olmadan container varsayılan (genelde güvensiz) ayarlarla çalışır. "
             "runAsNonRoot, readOnlyRootFilesystem, allowPrivilegeEscalation gibi kritik "
@@ -497,16 +721,17 @@ KUBERNETES_RULES = {
     "CKV_K8S_30": {
         "severity": "MEDIUM",
         "category": "Best Practice",
-        "title_tr": "Pod için securityContext tanımlanmamış",
-        "title_en": "securityContext not defined for pod",
+        "title_tr": "Container için securityContext tanımlanmamış",
+        "title_en": "Apply security context to containers",
         "explanation_tr": (
-            "Pod seviyesinde securityContext, pod'daki tüm container'lar için varsayılan "
-            "güvenlik ayarlarını tanımlar. Tanımlanmazsa pod'lar varsayılan (genelde güvensiz) "
-            "ayarlarla çalışır."
+            "Container seviyesinde securityContext eksikse, container kritik güvenlik "
+            "ayarlarını miras almaz ve varsayılan (zayıf) konfigürasyonla çalışır. "
+            "Pod seviyesi ayarları container seviyesinde özelleştirilmelidir."
         ),
         "explanation_en": (
-            "Pod-level securityContext defines default security settings for all containers in the pod. "
-            "Without it, pods run with default (usually insecure) settings."
+            "Without container-level securityContext, the container inherits no critical "
+            "security settings and runs with default (weak) configuration. "
+            "Pod-level settings should be customized at the container level."
         ),
         "references": [
             "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
@@ -516,7 +741,7 @@ KUBERNETES_RULES = {
         "severity": "MEDIUM",
         "category": "Container Hardening",
         "title_tr": "seccomp profili tanımlanmamış",
-        "title_en": "seccomp profile not defined",
+        "title_en": "Ensure seccomp profile is set to runtime/default",
         "explanation_tr": (
             "seccomp (secure computing mode) container'ın yapabileceği system call'ları kısıtlar. "
             "Tanımlanmadığında container tüm syscall'ları yapabilir, bu da kernel saldırı yüzeyini "
@@ -534,16 +759,16 @@ KUBERNETES_RULES = {
     "CKV_K8S_37": {
         "severity": "HIGH",
         "category": "Container Hardening",
-        "title_tr": "Tüm capability'ler düşürülmemiş",
-        "title_en": "Not all capabilities are dropped",
+        "title_tr": "Container'a capability eklenmiş",
+        "title_en": "Minimize admission of containers with capabilities assigned",
         "explanation_tr": (
             "Linux capability'leri kernel yetkilerini parçalara böler. "
-            "Tüm capability'leri drop etmeden çalıştırılan container'lar, ihtiyaç duymadıkları "
+            "Capabilities ekleyerek çalıştırılan container'lar, ihtiyaç duymadıkları "
             "yetkilerle çalışır. Best practice: 'drop: [ALL]' yapın ve sadece gerekli olanları add edin."
         ),
         "explanation_en": (
             "Linux capabilities break down kernel privileges into smaller units. "
-            "Containers running without dropping all capabilities have unnecessary privileges. "
+            "Containers with added capabilities have unnecessary privileges. "
             "Best practice: 'drop: [ALL]' and add back only what's needed."
         ),
         "references": [
@@ -554,7 +779,7 @@ KUBERNETES_RULES = {
         "severity": "MEDIUM",
         "category": "Service Account",
         "title_tr": "Service account token otomatik mount ediliyor",
-        "title_en": "Service account token is automounted",
+        "title_en": "Ensure that service account tokens are only mounted where necessary",
         "explanation_tr": (
             "automountServiceAccountToken: false ayarlanmamışsa, pod Kubernetes API'ye erişim "
             "için service account token'ını otomatik mount eder. Container kompromize olursa "
@@ -569,16 +794,54 @@ KUBERNETES_RULES = {
             "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
         ],
     },
+    "CKV_K8S_40": {
+        "severity": "HIGH",
+        "category": "Container Hardening",
+        "title_tr": "Container'da runAsUser yüksek bir UID değil",
+        "title_en": "Containers should run as a high UID to avoid host conflict",
+        "explanation_tr": (
+            "runAsUser düşük bir UID (10000'den küçük) ise host sistemindeki gerçek "
+            "kullanıcılarla çakışabilir. 10000+ UID kullanmak host kullanıcılarıyla "
+            "izolasyon sağlar."
+        ),
+        "explanation_en": (
+            "If runAsUser is a low UID (below 10000), it may conflict with real users "
+            "on the host system. Using UIDs 10000+ ensures isolation from host users."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+        ],
+    },
+    "CKV_K8S_43": {
+        "severity": "MEDIUM",
+        "category": "Supply Chain",
+        "title_tr": "Image digest (hash) ile pin edilmemiş",
+        "title_en": "Image should use digest",
+        "explanation_tr": (
+            "Image sadece tag ile referans verilirse (örn: nginx:1.21), tag aynı kalsa bile "
+            "altındaki image değişebilir. Immutable digest (sha256:...) kullanmak tam "
+            "reproducibility ve supply chain güvenliği sağlar."
+        ),
+        "explanation_en": (
+            "If an image is referenced only by tag (e.g., nginx:1.21), the underlying image "
+            "may change even with the same tag. Using an immutable digest (sha256:...) "
+            "ensures full reproducibility and supply chain security."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/containers/images/#image-names",
+        ],
+    },
 }
 
-# Terraform kuralları (AWS odaklı - en yaygın olanlar)
+
+# Terraform kuralları (AWS - en yaygın)
 TERRAFORM_RULES = {
     # === S3 Bucket Kuralları ===
     "CKV_AWS_18": {
         "severity": "MEDIUM",
         "category": "Logging & Audit",
         "title_tr": "S3 bucket access logging etkin değil",
-        "title_en": "S3 bucket access logging is not enabled",
+        "title_en": "Ensure S3 bucket has access logging enabled",
         "explanation_tr": (
             "S3 bucket'a yapılan istekler loglanmadığında, veri sızıntısı veya yetkisiz erişim "
             "durumlarında forensik analiz yapılamaz. Compliance gereksinimleri için (SOC2, "
@@ -595,8 +858,8 @@ TERRAFORM_RULES = {
     "CKV_AWS_19": {
         "severity": "HIGH",
         "category": "Encryption",
-        "title_tr": "S3 bucket sunucu tarafında şifreleme (SSE) yok",
-        "title_en": "S3 bucket lacks server-side encryption (SSE)",
+        "title_tr": "S3 bucket sunucu tarafında şifreleme yok",
+        "title_en": "Ensure S3 bucket has server-side encryption",
         "explanation_tr": (
             "S3'te depolanan veriler şifrelenmediğinde, AWS altyapısına fiziksel erişim "
             "sağlayan veya backup'lara erişen bir saldırgan veriyi okuyabilir. "
@@ -614,7 +877,7 @@ TERRAFORM_RULES = {
         "severity": "CRITICAL",
         "category": "Access Control",
         "title_tr": "S3 bucket public erişime açık",
-        "title_en": "S3 bucket is publicly accessible",
+        "title_en": "Ensure S3 bucket is not public",
         "explanation_tr": (
             "Public S3 bucket'lar veri sızıntılarının en yaygın nedenidir. "
             "Capital One, Verizon, Accenture gibi büyük şirketler bu yüzden milyonlarca kayıt kaybetti. "
@@ -633,7 +896,7 @@ TERRAFORM_RULES = {
         "severity": "MEDIUM",
         "category": "Data Protection",
         "title_tr": "S3 bucket versioning etkin değil",
-        "title_en": "S3 bucket versioning is not enabled",
+        "title_en": "Ensure S3 bucket versioning is enabled",
         "explanation_tr": (
             "Versioning olmadan accidental delete veya ransomware şifrelemesi sonrası "
             "veri kurtarılamaz. Versioning, her objenin geçmiş versiyonlarını saklar ve "
@@ -647,13 +910,12 @@ TERRAFORM_RULES = {
             "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Versioning.html",
         ],
     },
-
     # === Security Group Kuralları ===
     "CKV_AWS_23": {
         "severity": "LOW",
         "category": "Best Practice",
         "title_tr": "Security group açıklaması eksik",
-        "title_en": "Security group description is missing",
+        "title_en": "Ensure security group rules have descriptions",
         "explanation_tr": (
             "Security group ve kurallarına açıklama eklemek, audit ve troubleshooting "
             "süreçlerini kolaylaştırır. Kuralın neden var olduğu anlaşılmazsa, "
@@ -669,7 +931,7 @@ TERRAFORM_RULES = {
         "severity": "CRITICAL",
         "category": "Network Security",
         "title_tr": "Security group 22 portunu (SSH) dünyaya açıyor",
-        "title_en": "Security group exposes port 22 (SSH) to the world",
+        "title_en": "Ensure SSH is not open to 0.0.0.0/0",
         "explanation_tr": (
             "0.0.0.0/0 → port 22 (SSH) açık olması, brute-force saldırılarına davet çıkarmaktır. "
             "İnternette her zaman binlerce bot SSH portlarını tarıyor. "
@@ -688,7 +950,7 @@ TERRAFORM_RULES = {
         "severity": "CRITICAL",
         "category": "Network Security",
         "title_tr": "Security group 3389 portunu (RDP) dünyaya açıyor",
-        "title_en": "Security group exposes port 3389 (RDP) to the world",
+        "title_en": "Ensure RDP is not open to 0.0.0.0/0",
         "explanation_tr": (
             "0.0.0.0/0 → port 3389 (RDP) açık olması, Windows sunucuları için ciddi bir risktir. "
             "BlueKeep gibi RDP zafiyetleri ile uzaktan kod yürütme mümkündür. "
@@ -703,13 +965,12 @@ TERRAFORM_RULES = {
             "https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html",
         ],
     },
-
-    # === EC2 / EBS Kuralları ===
+    # === EBS Encryption ===
     "CKV_AWS_8": {
         "severity": "HIGH",
         "category": "Encryption",
         "title_tr": "EBS volume şifrelenmemiş",
-        "title_en": "EBS volume is not encrypted",
+        "title_en": "Ensure EBS volume is encrypted",
         "explanation_tr": (
             "EBS volume'lar şifrelenmediğinde, snapshot'lara veya backup'lara erişim sağlayan "
             "bir saldırgan veriyi okuyabilir. AWS KMS ile encryption-at-rest sağlanmalıdır."
@@ -722,13 +983,12 @@ TERRAFORM_RULES = {
             "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html",
         ],
     },
-
-    # === RDS Database Kuralları ===
+    # === RDS Database ===
     "CKV_AWS_16": {
         "severity": "HIGH",
         "category": "Encryption",
         "title_tr": "RDS instance şifrelenmemiş",
-        "title_en": "RDS instance is not encrypted",
+        "title_en": "Ensure RDS instance is encrypted",
         "explanation_tr": (
             "RDS şifrelenmediğinde, database'deki tüm hassas veriler (kullanıcı bilgileri, "
             "kredi kartları, sağlık verileri) snapshot/backup erişimi ile sızabilir. "
@@ -746,7 +1006,7 @@ TERRAFORM_RULES = {
         "severity": "CRITICAL",
         "category": "Access Control",
         "title_tr": "RDS instance public erişime açık",
-        "title_en": "RDS instance is publicly accessible",
+        "title_en": "Ensure RDS instance is not publicly accessible",
         "explanation_tr": (
             "publicly_accessible = true ile RDS internet üzerinden erişilebilir hale gelir. "
             "Database'ler ASLA internete açık olmamalıdır. VPC içinde, private subnet'te "
@@ -761,13 +1021,12 @@ TERRAFORM_RULES = {
             "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html",
         ],
     },
-
-    # === IAM Kuralları ===
+    # === IAM ===
     "CKV_AWS_40": {
         "severity": "HIGH",
         "category": "Identity & Access",
         "title_tr": "IAM policy kullanıcılara doğrudan atanmış",
-        "title_en": "IAM policy is directly attached to users",
+        "title_en": "Ensure IAM policies are attached to groups or roles, not users",
         "explanation_tr": (
             "Policy'leri doğrudan kullanıcılara atamak, izin yönetimini ve audit'i zorlaştırır. "
             "Best practice: kullanıcıları gruplara koy, policy'leri gruplara ata. "
@@ -786,7 +1045,7 @@ TERRAFORM_RULES = {
         "severity": "CRITICAL",
         "category": "Secrets Management",
         "title_tr": "Hardcoded AWS access key tespit edildi",
-        "title_en": "Hardcoded AWS access key detected",
+        "title_en": "Ensure no hardcoded AWS access keys",
         "explanation_tr": (
             "Terraform dosyasında AWS access key/secret bulunmak, GitHub'a commit edildiğinde "
             "saatler içinde kötü amaçlı botlar tarafından bulunup AWS hesabınızı sömürmek için "
@@ -803,13 +1062,12 @@ TERRAFORM_RULES = {
             "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#remove-credentials",
         ],
     },
-
     # === CloudTrail / Logging ===
     "CKV_AWS_35": {
         "severity": "MEDIUM",
         "category": "Logging & Audit",
         "title_tr": "CloudTrail log dosyaları şifrelenmemiş",
-        "title_en": "CloudTrail logs are not encrypted",
+        "title_en": "Ensure CloudTrail logs are encrypted at rest using KMS CMKs",
         "explanation_tr": (
             "CloudTrail logları kim ne yaptı bilgisini içerir. Şifrelenmediğinde, "
             "log dosyalarına erişen bir saldırgan saldırı planlamak için kullanılabilir "
@@ -823,13 +1081,12 @@ TERRAFORM_RULES = {
             "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html",
         ],
     },
-
     # === VPC / Network ===
     "CKV_AWS_130": {
         "severity": "MEDIUM",
         "category": "Network Security",
         "title_tr": "VPC subnet otomatik public IP atıyor",
-        "title_en": "VPC subnet auto-assigns public IPs",
+        "title_en": "Ensure VPC subnets do not assign public IP by default",
         "explanation_tr": (
             "map_public_ip_on_launch = true, subnet'te oluşturulan tüm EC2 instance'lara "
             "otomatik public IP verir. Bu yanlışlıkla internal servisleri internete açabilir. "
@@ -847,12 +1104,10 @@ TERRAFORM_RULES = {
 
 
 # Bilmediğimiz kurallar için fallback
-# Checkov yeni kural eklerse knowledge base'de olmayabilir
-# O zaman bu varsayılan açıklamayı kullanırız
 FALLBACK_RULE = {
     "severity": "MEDIUM",
     "category": "Security",
-    "title_tr": None,  # None ise Checkov'un kendi check_name'ini kullanacağız
+    "title_tr": None,
     "title_en": None,
     "explanation_tr": "Bu güvenlik kontrolü başarısız oldu. Detaylar için referans linklerini inceleyin.",
     "explanation_en": "This security check has failed. See reference links for details.",
