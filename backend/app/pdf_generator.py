@@ -5,6 +5,7 @@ Tarama sonucundan kurumsal görünümlü bir PDF raporu üretir.
 Kullanıcı bu raporu yöneticilerine sunmak için indirebilir.
 """
 
+import os
 from io import BytesIO
 from datetime import datetime
 
@@ -12,16 +13,53 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_CENTER
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
     Spacer,
     Table,
     TableStyle,
-    PageBreak,
     KeepTogether,
 )
+
+
+# === UNICODE FONT KAYDI (Türkçe karakter desteği) ===
+# DejaVu Sans, Türkçe dahil tüm Latin karakterleri destekler.
+# Linux sistemlerde standart kurulu gelir.
+
+# Olası font yolları (öncelik sırasına göre)
+FONT_CANDIDATES = [
+    # Linux - DejaVu (Ubuntu/Debian default)
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    # Linux - alternatif yol
+    ("/usr/share/fonts/TTF/DejaVuSans.ttf",
+     "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"),
+    # macOS
+    ("/Library/Fonts/Arial Unicode.ttf", "/Library/Fonts/Arial Unicode.ttf"),
+    # Windows - dev ortamı
+    ("C:\\Windows\\Fonts\\arial.ttf", "C:\\Windows\\Fonts\\arialbd.ttf"),
+]
+
+UNICODE_FONT = "Helvetica"  # fallback
+UNICODE_FONT_BOLD = "Helvetica-Bold"
+
+for regular_path, bold_path in FONT_CANDIDATES:
+    if os.path.exists(regular_path):
+        try:
+            pdfmetrics.registerFont(TTFont("UnicodeFont", regular_path))
+            UNICODE_FONT = "UnicodeFont"
+            if os.path.exists(bold_path):
+                pdfmetrics.registerFont(TTFont("UnicodeFont-Bold", bold_path))
+                UNICODE_FONT_BOLD = "UnicodeFont-Bold"
+            else:
+                UNICODE_FONT_BOLD = "UnicodeFont"
+            break
+        except Exception:
+            continue
 
 
 # Severity'ye göre renkler
@@ -33,10 +71,10 @@ SEVERITY_COLORS = {
 }
 
 SEVERITY_LABELS_TR = {
-    "CRITICAL": "KRITIK",
-    "HIGH": "YUKSEK",
+    "CRITICAL": "KRİTİK",
+    "HIGH": "YÜKSEK",
     "MEDIUM": "ORTA",
-    "LOW": "DUSUK",
+    "LOW": "DÜŞÜK",
 }
 
 FILE_TYPE_LABELS = {
@@ -47,10 +85,9 @@ FILE_TYPE_LABELS = {
 
 
 def _safe_text(text: str, max_len: int = None) -> str:
-    """ReportLab'a güvenli hale getir (HTML escape + Türkçe karakterleri ASCII'ye çevirme yok)."""
+    """ReportLab'a güvenli hale getir (HTML escape)."""
     if not text:
         return ""
-    # HTML escape karakterleri
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     if max_len and len(text) > max_len:
         text = text[:max_len] + "..."
@@ -74,10 +111,11 @@ def generate_pdf_report(scan_result: dict) -> bytes:
 
     styles = getSampleStyleSheet()
 
-    # Özel stiller
+    # Özel stiller - Türkçe karakter destekli font kullan
     title_style = ParagraphStyle(
         "CustomTitle",
         parent=styles["Heading1"],
+        fontName=UNICODE_FONT_BOLD,
         fontSize=24,
         textColor=colors.HexColor("#0891b2"),
         spaceAfter=10,
@@ -87,6 +125,7 @@ def generate_pdf_report(scan_result: dict) -> bytes:
     subtitle_style = ParagraphStyle(
         "Subtitle",
         parent=styles["Normal"],
+        fontName=UNICODE_FONT,
         fontSize=11,
         textColor=colors.HexColor("#64748b"),
         alignment=TA_CENTER,
@@ -96,6 +135,7 @@ def generate_pdf_report(scan_result: dict) -> bytes:
     section_title_style = ParagraphStyle(
         "SectionTitle",
         parent=styles["Heading2"],
+        fontName=UNICODE_FONT_BOLD,
         fontSize=14,
         textColor=colors.HexColor("#1e293b"),
         spaceAfter=8,
@@ -106,15 +146,23 @@ def generate_pdf_report(scan_result: dict) -> bytes:
     body_style = ParagraphStyle(
         "Body",
         parent=styles["Normal"],
+        fontName=UNICODE_FONT,
         fontSize=10,
         textColor=colors.HexColor("#334155"),
         spaceAfter=6,
         leading=14,
     )
 
+    body_bold_style = ParagraphStyle(
+        "BodyBold",
+        parent=body_style,
+        fontName=UNICODE_FONT_BOLD,
+    )
+
     small_meta_style = ParagraphStyle(
         "SmallMeta",
         parent=styles["Normal"],
+        fontName=UNICODE_FONT,
         fontSize=8,
         textColor=colors.HexColor("#64748b"),
     )
@@ -123,9 +171,9 @@ def generate_pdf_report(scan_result: dict) -> bytes:
 
     # === BAŞLIK ===
     elements.append(Paragraph("InfraGuard Studio", title_style))
-    elements.append(Paragraph("IaC Guvenlik Tarama Raporu", subtitle_style))
+    elements.append(Paragraph("IaC Güvenlik Tarama Raporu", subtitle_style))
 
-    # Meta bilgi (tarih, dosya tipi, scan ID)
+    # Meta bilgi
     file_type_label = FILE_TYPE_LABELS.get(
         scan_result.get("file_type", "unknown"), scan_result.get("file_type", "unknown")
     )
@@ -138,7 +186,7 @@ def generate_pdf_report(scan_result: dict) -> bytes:
     elements.append(Spacer(1, 20))
 
     # === ÖZET / RISK SKORU ===
-    elements.append(Paragraph("Genel Ozet", section_title_style))
+    elements.append(Paragraph("Genel Özet", section_title_style))
 
     risk_score = scan_result.get("risk_score", 100)
     risk_level = scan_result.get("risk_level", "LOW")
@@ -146,13 +194,15 @@ def generate_pdf_report(scan_result: dict) -> bytes:
     summary = scan_result.get("summary", {})
     severity_counts = summary.get("severity_counts", {})
 
-    # Skor + risk seviyesi tablosu
     score_color = SEVERITY_COLORS.get(risk_level, colors.HexColor("#64748b"))
     score_data = [
         [
-            Paragraph(f"<font size='28' color='{score_color.hexval()}'><b>{risk_score}/100</b></font>", body_style),
-            Paragraph(f"<font size='14' color='{score_color.hexval()}'><b>{risk_label_tr} RISK</b></font><br/>"
-                      f"<font size='9' color='#64748b'>{summary.get('total_findings', 0)} bulgu tespit edildi</font>", body_style),
+            Paragraph(f"<font name='{UNICODE_FONT_BOLD}' size='28' color='{score_color.hexval()}'><b>{risk_score}/100</b></font>", body_style),
+            Paragraph(
+                f"<font name='{UNICODE_FONT_BOLD}' size='14' color='{score_color.hexval()}'><b>{risk_label_tr} RİSK</b></font><br/>"
+                f"<font size='9' color='#64748b'>{summary.get('total_findings', 0)} bulgu tespit edildi</font>",
+                body_style,
+            ),
         ]
     ]
     score_table = Table(score_data, colWidths=[5 * cm, 11 * cm])
@@ -171,16 +221,16 @@ def generate_pdf_report(scan_result: dict) -> bytes:
     # Severity dağılımı tablosu
     severity_data = [
         [
-            Paragraph(f"<b>{severity_counts.get('CRITICAL', 0)}</b>", body_style),
-            Paragraph(f"<b>{severity_counts.get('HIGH', 0)}</b>", body_style),
-            Paragraph(f"<b>{severity_counts.get('MEDIUM', 0)}</b>", body_style),
-            Paragraph(f"<b>{severity_counts.get('LOW', 0)}</b>", body_style),
+            Paragraph(f"<b>{severity_counts.get('CRITICAL', 0)}</b>", body_bold_style),
+            Paragraph(f"<b>{severity_counts.get('HIGH', 0)}</b>", body_bold_style),
+            Paragraph(f"<b>{severity_counts.get('MEDIUM', 0)}</b>", body_bold_style),
+            Paragraph(f"<b>{severity_counts.get('LOW', 0)}</b>", body_bold_style),
         ],
         [
             Paragraph("<font color='#dc2626'>Kritik</font>", small_meta_style),
-            Paragraph("<font color='#ea580c'>Yuksek</font>", small_meta_style),
+            Paragraph("<font color='#ea580c'>Yüksek</font>", small_meta_style),
             Paragraph("<font color='#ca8a04'>Orta</font>", small_meta_style),
-            Paragraph("<font color='#2563eb'>Dusuk</font>", small_meta_style),
+            Paragraph("<font color='#2563eb'>Düşük</font>", small_meta_style),
         ],
     ]
     severity_table = Table(severity_data, colWidths=[4 * cm, 4 * cm, 4 * cm, 4 * cm])
@@ -199,10 +249,10 @@ def generate_pdf_report(scan_result: dict) -> bytes:
     findings = scan_result.get("findings", [])
 
     if not findings:
-        elements.append(Paragraph("Guvenlik Bulgulari", section_title_style))
+        elements.append(Paragraph("Güvenlik Bulguları", section_title_style))
         elements.append(Paragraph(
-            "<font color='#16a34a'><b>Bu dosyada guvenlik sorunu bulunamadi.</b></font> "
-            "Temel guvenlik kontrollerini gecti.",
+            "<font color='#16a34a'><b>Bu dosyada güvenlik sorunu bulunamadı.</b></font> "
+            "Temel güvenlik kontrollerini geçti.",
             body_style,
         ))
     else:
@@ -217,34 +267,28 @@ def generate_pdf_report(scan_result: dict) -> bytes:
             if finding.get("enriched_by_llm"):
                 ai_badge = " <font color='#9333ea'><b>[AI]</b></font>"
 
-            # Bulgu kartı
             finding_elements = []
 
-            # Başlık satırı
             header = (
                 f"<font color='{sev_color.hexval()}'><b>[{sev_label}]</b></font> "
                 f"<font color='#64748b' size='8'>{_safe_text(finding.get('check_id', ''))}</font>"
                 f"{ai_badge} "
-                f"<font color='#64748b' size='8'>- Satir {finding.get('line_start', 0)}</font>"
+                f"<font color='#64748b' size='8'>- Satır {finding.get('line_start', 0)}</font>"
             )
             finding_elements.append(Paragraph(header, body_style))
 
-            # Başlık (Türkçe)
             title = _safe_text(finding.get("title", ""), 200)
-            finding_elements.append(Paragraph(f"<b>{title}</b>", body_style))
+            finding_elements.append(Paragraph(f"<b>{title}</b>", body_bold_style))
 
-            # Açıklama
             explanation = _safe_text(finding.get("explanation", ""), 500)
             finding_elements.append(Paragraph(explanation, body_style))
 
-            # Kategori
             category = _safe_text(finding.get("category", ""))
             finding_elements.append(Paragraph(
                 f"<font size='8' color='#64748b'><b>Kategori:</b> {category}</font>",
                 small_meta_style,
             ))
 
-            # Hatalı kod parçası varsa
             code_snippet = finding.get("code_snippet")
             if code_snippet:
                 finding_elements.append(Paragraph(
@@ -254,20 +298,18 @@ def generate_pdf_report(scan_result: dict) -> bytes:
 
             finding_elements.append(Spacer(1, 12))
 
-            # Hepsini bir arada tut (sayfa başlangıcında kırılmasın)
             elements.append(KeepTogether(finding_elements))
 
     # === FOOTER ===
     elements.append(Spacer(1, 20))
     elements.append(Paragraph(
         "<font size='8' color='#94a3b8'>"
-        "Bu rapor InfraGuard Studio tarafindan otomatik olarak uretilmistir. "
-        "Bulgular Checkov 3.x ve isteğe bağli olarak GPT-4o-mini ile uretilmistir."
+        "Bu rapor InfraGuard Studio tarafından otomatik olarak üretilmiştir. "
+        "Bulgular Checkov 3.x ve isteğe bağlı olarak GPT-4o-mini ile üretilmiştir."
         "</font>",
         small_meta_style,
     ))
 
-    # PDF'i oluştur
     doc.build(elements)
 
     buffer.seek(0)
