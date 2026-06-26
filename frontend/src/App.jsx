@@ -60,7 +60,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // Dosya tipi değişince kodu o tipin varsayılan örneği yap, eski sonucu temizle
   function handleFileTypeChange(newType) {
     setFileType(newType)
     setCode(DEFAULT_CODES[newType])
@@ -89,77 +88,134 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <Header />
+    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden">
+      {/* Background glow effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 -right-40 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-3xl"></div>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Hero */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-3">
-            IaC Güvenlik Açıklarını Anında Tespit Edin
-          </h2>
-          <p className="text-slate-400 max-w-2xl mx-auto">
-            Dockerfile, Kubernetes manifest ve Terraform dosyalarınızdaki güvenlik
-            risklerini, açıklamalı raporlar ve düzeltme önerileriyle keşfedin.
-          </p>
-        </div>
+      {/* Grid pattern overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundSize: '40px 40px',
+        }}
+      ></div>
 
-        {/* Privacy notice */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-3 mb-6 text-center">
-          <p className="text-xs text-slate-400">
-            <span className="text-cyan-400">🔒</span> Kodunuz tarama süresi boyunca geçici olarak işlenir, kalıcı olarak saklanmaz.
-            Hassas dosyalar paylaşmayınız.
-          </p>
-        </div>
+      <div className="relative z-10">
+        <Header />
 
-        {/* Dosya tipi sekmeleri */}
-        <FileTypeSelector selected={fileType} onChange={handleFileTypeChange} />
-
-        {/* İki sütunlu layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Sol: Editör + Tara butonu */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">Kodunuzu Yapıştırın</h3>
-              <button
-                onClick={handleScan}
-                disabled={isLoading}
-                className="bg-cyan-500 hover:bg-cyan-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Taranıyor...
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    Tara
-                  </>
-                )}
-              </button>
+        <main className="max-w-7xl mx-auto px-6 py-12">
+          {/* Hero */}
+          <div className="text-center mb-12">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-xs font-medium">
+              <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+              <span>Live · DevSecOps Portfolio Project</span>
             </div>
-            <SampleSelector fileType={fileType} onSelect={setCode} />
-            <CodeEditor code={code} onChange={setCode} fileType={fileType} />
+
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+              IaC Güvenlik Açıklarını{' '}
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                Anında Tespit Edin
+              </span>
+            </h2>
+
+            <p className="text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">
+              Dockerfile, Kubernetes manifest ve Terraform dosyalarınızdaki güvenlik
+              risklerini, <span className="text-slate-200">açıklamalı raporlar</span> ve{' '}
+              <span className="text-slate-200">düzeltme önerileriyle</span> keşfedin.
+            </p>
+
+            {/* Stats */}
+            <div className="flex flex-wrap items-center justify-center gap-8 mt-8 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                  <span className="text-cyan-400 font-bold">3</span>
+                </div>
+                <span className="text-slate-400">Dosya Tipi</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                  <span className="text-blue-400 font-bold text-xs">1K+</span>
+                </div>
+                <span className="text-slate-400">Güvenlik Kuralı</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                  <span className="text-purple-400 font-bold text-xs">AI</span>
+                </div>
+                <span className="text-slate-400">Akıllı Açıklama</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-slate-400">Otomatik Düzeltme</span>
+              </div>
+            </div>
           </div>
 
-          {/* Sağ: Sonuç paneli */}
-          <div>
-            <h3 className="text-lg font-semibold mb-3">Güvenlik Raporu</h3>
-             <ResultPanel
-              result={result}
-              isLoading={isLoading}
-              error={error}
-              originalCode={code}
-              fileType={fileType}
-            />
+          {/* Privacy notice */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-lg px-4 py-3 mb-6 text-center backdrop-blur">
+            <p className="text-xs text-slate-400">
+              <span className="text-cyan-400">🔒</span> Kodunuz tarama süresi boyunca geçici olarak işlenir, kalıcı olarak saklanmaz.
+              Hassas dosyalar paylaşmayınız.
+            </p>
           </div>
-        </div>
-      </main>
 
-      <Footer />
+          {/* Dosya tipi sekmeleri */}
+          <FileTypeSelector selected={fileType} onChange={handleFileTypeChange} />
+
+          {/* İki sütunlu layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">Kodunuzu Yapıştırın</h3>
+                <button
+                  onClick={handleScan}
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium px-5 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Taranıyor...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      Tara
+                    </>
+                  )}
+                </button>
+              </div>
+              <SampleSelector fileType={fileType} onSelect={setCode} />
+              <CodeEditor code={code} onChange={setCode} fileType={fileType} />
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Güvenlik Raporu</h3>
+              <ResultPanel
+                result={result}
+                isLoading={isLoading}
+                error={error}
+                originalCode={code}
+                fileType={fileType}
+              />
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
     </div>
   )
 }
