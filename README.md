@@ -1,41 +1,41 @@
-# 🛡️ InfraGuard Studio
+#  InfraGuard Studio
 
 Web tabanlı interaktif **IaC (Infrastructure as Code) güvenlik denetim platformu**. Dockerfile, Kubernetes manifest ve Terraform dosyalarınızı saniyeler içinde tarar; Türkçe açıklamalı bulgular, otomatik düzeltme önerileri ve CI/CD pipeline snippet'leri sunar.
 
-🌐 **Canlı Demo:** [https://infraguard.muhammedasef.com](https://infraguard.muhammedasef.com)
+ **Canlı Demo:** [https://infraguard.muhammedasef.com](https://infraguard.muhammedasef.com)
 
 ---
 
-## ✨ Öne Çıkan Özellikler
+##  Öne Çıkan Özellikler
 
-### 🔍 Çok Katmanlı Tarama
+###  Çok Katmanlı Tarama
 - **3 dosya tipi desteği**: Dockerfile, Kubernetes YAML, Terraform (HCL)
 - **Checkov 3.x entegrasyonu** ile 1000+ güvenlik kuralı
 - **Hardcoded secret tespiti** (`detect-secrets` framework)
 - Sandbox edilmiş izole tarama (geçici UUID dizinleri, shell injection koruması)
 
-### 🤖 Hibrit Akıllı Açıklama Sistemi
+###  Hibrit Akıllı Açıklama Sistemi
 - **Statik knowledge base**: 45+ kural için manuel Türkçe açıklama ve gerçek dünya örnekleri (Capital One, BlueKeep vb.)
 - **LLM Fallback**: Bilinmeyen kurallar için **OpenAI GPT-4o-mini** ile dinamik Türkçe açıklama üretimi
 - **4 katmanlı koruma**: Kalıcı JSON cache, günlük bütçe limiti, IP başına saatlik rate limit, input token limiti
 
-### 🔧 Otomatik Düzeltme Engine
+###  Otomatik Düzeltme Engine
 - **15 yüksek-etkili kural** için otomatik düzeltme (USER root, latest tag, privileged container, public S3 bucket vb.)
 - **Monaco Diff Editor** ile yan yana Before/After karşılaştırma
 - Tek tıkla kopyalama
 
-### ⚙️ CI/CD Pipeline Snippet Üretici
+###  CI/CD Pipeline Snippet Üretici
 - Her tarama sonucunda **GitLab CI** ve **GitHub Actions** için hazır job snippet'i
 - "Bul ve bildir"den "üretime entegre et"e DevSecOps tam döngüsü
 
-### 📄 Kurumsal PDF Rapor
+###  Kurumsal PDF Rapor
 - **ReportLab** ile profesyonel PDF raporu üretimi
 - Risk skoru, severity dağılımı, her bulgu için detaylı kart
 - AI ile zenginleştirilen bulgular `[AI]` rozetli
 
 ---
 
-## 🏗️ Mimari
+##  Mimari
 
 İstek akışı:
 
@@ -61,7 +61,7 @@ Web tabanlı interaktif **IaC (Infrastructure as Code) güvenlik denetim platfor
 
 ---
 
-## 🚀 CI/CD Pipeline
+##  CI/CD Pipeline
 
 Her commit, **6 aşamalı bir DevSecOps gate**'inden geçer:
 
@@ -72,7 +72,7 @@ Her commit, **6 aşamalı bir DevSecOps gate**'inden geçer:
 | **Gitleaks** | Sızdırılmış API key, password, token taraması (tüm commit geçmişi) |
 | **Trivy** | Dependency CVE + IaC misconfiguration taraması (SARIF → GitHub Security) |
 | **Hadolint** | Dockerfile linting (mevcutsa) |
-| **InfraGuard Self-Scan** ⭐ | **Dogfood pattern** — proje kendi kendisini Checkov ile tarar |
+| **InfraGuard Self-Scan**  | **Dogfood pattern** — proje kendi kendisini Checkov ile tarar |
 
 ### 2. Deploy to Production
 - Security gate yeşil olursa otomatik tetiklenir
@@ -87,7 +87,7 @@ Her commit, **6 aşamalı bir DevSecOps gate**'inden geçer:
 
 ---
 
-## 🔒 Güvenlik Tasarımı
+##  Güvenlik Tasarımı
 
 ### Backend Hardening
 - **Sandbox**: Her tarama izole UUID dizininde, geçici dosyalarla
@@ -114,20 +114,20 @@ Her commit, **6 aşamalı bir DevSecOps gate**'inden geçer:
 
 ---
 
-## 📊 Mülakat Anlatım Noktaları
+##  Mülakat Anlatım Noktaları
 
 > "Bu proje **DevSecOps döngüsünün tamamını** kapsıyor. Sadece bir scanner yazmadım — scanner'ı production'a koydum, kendi pipeline'ımda kendisini kullanıyorum (dogfood pattern), CSP gibi tradeoff'ları bilinçli olarak yönettim, LLM cost exhaustion saldırılarına karşı 4 katmanlı bir savunma kurdum. Her commit otomatik 4 farklı güvenlik aracından geçiyor, raporlar SARIF formatında GitHub Security tab'inde toplanıyor."
 
 ---
 
-## 🧑‍💻 Yazar
+##  Yazar
 
 **Muhammed Asef** — Aspiring DevSecOps Engineer
 
-🌐 [muhammedasef.com](https://muhammedasef.com) · 💼 [LinkedIn](https://linkedin.com/in/muhammedasef) · 🐙 [GitHub](https://github.com/MuhammedAsef)
+ [muhammedasef.com](https://muhammedasef.com) · 💼 [LinkedIn](https://linkedin.com/in/muhammedasef) · 🐙 [GitHub](https://github.com/MuhammedAsef)
 
 ---
 
-## 📜 Lisans
+##  Lisans
 
 MIT License — bkz. [LICENSE](LICENSE)
