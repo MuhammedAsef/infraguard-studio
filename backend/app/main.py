@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,15 +12,21 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS middleware - frontend farklı portta çalışacağı için gerekli
-# React varsayılan olarak 5173 portunda, backend 8000'de çalışıyor
-# CORS olmadan tarayıcı isteği bloklar
+# CORS middleware - frontend farklı origin'de çalışacağı için gerekli
+# Production'da sadece whitelist'teki origin'ler API'ye erişebilir
+# Dev için localhost, prod için canlı subdomain
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,https://infraguard.muhammedasef.com"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Geliştirme için. Production'da domain ile sınırlandırılacak
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+    max_age=600,
 )
 
 # Router'ları ekle - hepsi /api prefix'i altında
