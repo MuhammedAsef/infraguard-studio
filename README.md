@@ -1,143 +1,133 @@
 # 🛡️ InfraGuard Studio
 
-> Web tabanlı interaktif IaC (Infrastructure as Code) güvenlik denetim platformu.
+Web tabanlı interaktif **IaC (Infrastructure as Code) güvenlik denetim platformu**. Dockerfile, Kubernetes manifest ve Terraform dosyalarınızı saniyeler içinde tarar; Türkçe açıklamalı bulgular, otomatik düzeltme önerileri ve CI/CD pipeline snippet'leri sunar.
 
-Dockerfile, Kubernetes manifest, Docker Compose ve Terraform dosyalarındaki güvenlik açıklarını anında tespit eden, geliştiricinin anlayacağı dilde açıklayan ve düzeltme önerileri sunan açık kaynak DevSecOps aracı.
+🌐 **Canlı Demo:** [https://infraguard.muhammedasef.com](https://infraguard.muhammedasef.com)
 
-## 🎯 Projenin Amacı
+---
 
-DevSecOps'un en önemli prensiplerinden biri **Shift-Left Security** — yani güvenliği yazılım geliştirme yaşam döngüsünün en erken aşamasına çekmek. Kod henüz production'a deploy edilmeden, hatta merge edilmeden önce güvenlik açıklarını yakalamak.
+## ✨ Öne Çıkan Özellikler
 
-Checkov gibi güçlü açık kaynak araçlar var ama CLI çıktıları junior/orta seviye geliştiriciler için anlaşılması zor. InfraGuard Studio bu boşluğu kapatmayı hedefliyor:
+### 🔍 Çok Katmanlı Tarama
+- **3 dosya tipi desteği**: Dockerfile, Kubernetes YAML, Terraform (HCL)
+- **Checkov 3.x entegrasyonu** ile 1000+ güvenlik kuralı
+- **Hardcoded secret tespiti** (`detect-secrets` framework)
+- Sandbox edilmiş izole tarama (geçici UUID dizinleri, shell injection koruması)
 
-- **Görsel ve interaktif deneyim** — Monaco Editor ile VS Code benzeri kod düzenleme
-- **Türkçe/İngilizce açıklamalar** — "CKV_DOCKER_8" yerine "Container root kullanıcıyla çalışırsa, bir saldırgan container'dan kaçmayı başardığında host sisteme root erişimi elde edebilir."
-- **Risk skorlama** — 0-100 arası genel güvenlik skoru
-- **Severity dağılımı** — Critical / High / Medium / Low görsel olarak
-- **Referans linkler** — Her bulgu için CIS Benchmark, OWASP ve resmi Docker dokümantasyon linkleri
+### 🤖 Hibrit Akıllı Açıklama Sistemi
+- **Statik knowledge base**: 45+ kural için manuel Türkçe açıklama ve gerçek dünya örnekleri (Capital One, BlueKeep vb.)
+- **LLM Fallback**: Bilinmeyen kurallar için **OpenAI GPT-4o-mini** ile dinamik Türkçe açıklama üretimi
+- **4 katmanlı koruma**: Kalıcı JSON cache, günlük bütçe limiti, IP başına saatlik rate limit, input token limiti
 
-## 🚀 Özellikler
+### 🔧 Otomatik Düzeltme Engine
+- **15 yüksek-etkili kural** için otomatik düzeltme (USER root, latest tag, privileged container, public S3 bucket vb.)
+- **Monaco Diff Editor** ile yan yana Before/After karşılaştırma
+- Tek tıkla kopyalama
 
-- ✅ **Dockerfile tarama** — Container hardening, supply chain ve best practice kontrolleri
-- ✅ **Monaco Editor** — VS Code'un editörü, syntax highlighting ile
-- ✅ **Hazır demo dosyaları** — Tek tıkla insecure/secure örnekleri deneyin
-- ✅ **Sandbox güvenliği** — Kullanıcı kodu izole geçici dizinde işlenir, kalıcı saklanmaz
-- ✅ **Concurrency koruması** — Aynı anda max 2 tarama (VPS kaynak koruması)
-- ✅ **Timeout & rate limiting** — DoS koruması
-- 🔜 **Kubernetes, Docker Compose, Terraform** desteği (Faz 2)
-- 🔜 **Before/After diff** — Düzeltilmiş kodu yan yana göster (Faz 2)
-- 🔜 **CI/CD gate snippet** — Pipeline'a nasıl entegre edileceği önerisi (Faz 2)
-- 🔜 **PDF rapor export** (Faz 3)
+### ⚙️ CI/CD Pipeline Snippet Üretici
+- Her tarama sonucunda **GitLab CI** ve **GitHub Actions** için hazır job snippet'i
+- "Bul ve bildir"den "üretime entegre et"e DevSecOps tam döngüsü
 
-## 🛠️ Teknoloji Yığını
+### 📄 Kurumsal PDF Rapor
+- **ReportLab** ile profesyonel PDF raporu üretimi
+- Risk skoru, severity dağılımı, her bulgu için detaylı kart
+- AI ile zenginleştirilen bulgular `[AI]` rozetli
 
-### Frontend
-- **React 19** — UI framework
-- **Vite** — Build tool ve dev server
-- **Tailwind CSS v4** — Utility-first CSS
-- **Monaco Editor** — VS Code'un kod editörü
-
-### Backend
-- **Python 3.14** — Backend dili
-- **FastAPI** — Async Python web framework
-- **Checkov** — IaC güvenlik tarayıcısı (1000+ kural)
-- **Pydantic** — Veri doğrulama
-
-### DevSecOps
-- **Sandbox isolation** — UUID temp dizinler, sabit dosya adları
-- **subprocess güvenliği** — shell=False, allowlisted arguments, minimal env
-- **Async concurrency** — asyncio.Semaphore ile yük yönetimi
-
-## 📦 Kurulum
-
-### Gereksinimler
-
-- Python 3.11+
-- Node.js 20+
-- npm
-
-### Backend Kurulumu
-
-    cd backend
-    pip install -r requirements.txt
-    python -m uvicorn app.main:app --reload --port 8000
-
-Backend çalışıyor: http://localhost:8000
-
-API docs (Swagger): http://localhost:8000/docs
-
-### Frontend Kurulumu
-
-    cd frontend
-    npm install
-    npm run dev
-
-Frontend çalışıyor: http://localhost:5173
+---
 
 ## 🏗️ Mimari
 
-    ┌────────────────┐         ┌──────────────────┐         ┌─────────────┐
-    │  React + Vite  │ ──────▶ │  FastAPI Backend │ ──────▶ │   Checkov   │
-    │  Monaco Editor │  HTTP   │     (Async)      │ subproc │    (CLI)    │
-    └────────────────┘         └──────────────────┘         └─────────────┘
-                                        │
-                                        ▼
-                               ┌──────────────────┐
-                               │    Normalizer    │
-                               │ + Knowledge Base │
-                               │   (TR/EN i18n)   │
-                               └──────────────────┘
+İstek akışı:
 
-### Güvenlik Tasarım Kararları
+**Frontend (React + Vite + Monaco)** → HTTPS → **Nginx (Reverse Proxy + Security Headers + SSL)** → **FastAPI Backend (systemd)** → **Scanner (Checkov) + Normalizer (LLM Layer) + Fix Engine + PDF Generator**
 
-1. **Dosya adı kullanıcıdan alınmaz** — Path traversal önlemi olarak backend sabit isim verir (Dockerfile)
-2. **shell=False** — subprocess command injection önlemi
-3. **UUID temp dizinler** — Her tarama izole, bitince shutil.rmtree ile silinir
-4. **Timeout** — Max 30 saniye, kaynak tüketimi önlemi
-5. **Boyut limiti** — Max 50KB dosya
-6. **Concurrency** — asyncio.Semaphore(2) ile aynı anda max 2 tarama
-7. **--download-external-modules false** — SSRF önlemi
-8. **Minimal subprocess env** — Ortam değişkeni sızıntısı önlemi
+### Backend
+- **Python 3.12** + **FastAPI** + **Uvicorn**
+- **Checkov 3.3** (multi-framework: dockerfile, kubernetes, terraform, secrets)
+- **OpenAI 2.x** (GPT-4o-mini)
+- **ReportLab** (PDF üretimi)
+- **Pydantic v2** (request validation)
 
-## 📊 API Endpoint'leri
+### Frontend
+- **React 19** + **Vite** + **TypeScript-ready**
+- **Tailwind CSS v4**
+- **Monaco Editor** (VS Code editor, syntax highlighting + diff viewer)
+- **Oxlint**
 
-| Method | Endpoint        | Açıklama                       |
-|--------|-----------------|--------------------------------|
-| POST   | /api/scan       | IaC dosyasını tara             |
-| GET    | /api/samples    | Hazır demo dosyalarını getir   |
-| GET    | /api/health     | Sağlık kontrolü                |
-| GET    | /api/version    | Scanner versiyonları           |
+### Altyapı
+- **Ubuntu 24 VPS** + **Nginx 1.24** + **Let's Encrypt SSL**
+- **Cloudflare DNS**
+- **systemd service** (auto-restart, isolation)
 
-Detaylı API dokümantasyonu için backend çalışırken http://localhost:8000/docs adresini ziyaret edin.
+---
 
-## 🗺️ Yol Haritası
+## 🚀 CI/CD Pipeline
 
-- [x] **Faz 1** — Dockerfile tarama + risk skoru + Monaco Editor (MVP)
-- [ ] **Faz 2** — Kubernetes, Docker Compose, Terraform desteği
-- [ ] **Faz 2** — Before/After diff ve düzeltme önerileri
-- [ ] **Faz 2** — CI/CD gate snippet önerileri (GitLab/GitHub Actions)
-- [ ] **Faz 3** — PDF rapor export
-- [ ] **Faz 3** — Hadolint ve Trivy entegrasyonu
-- [ ] **Faz 4** — Policy-as-Code modu (OPA/Rego, Kyverno)
+Her commit, **6 aşamalı bir DevSecOps gate**'inden geçer:
 
-## 🎓 Neden Bu Proje?
+### 1. Security Scan (Paralel, ~45s)
 
-DevSecOps kariyerime yönelik üçüncü portfolyo projem. Diğerleri:
+| Tool | Görev |
+|------|-------|
+| **Gitleaks** | Sızdırılmış API key, password, token taraması (tüm commit geçmişi) |
+| **Trivy** | Dependency CVE + IaC misconfiguration taraması (SARIF → GitHub Security) |
+| **Hadolint** | Dockerfile linting (mevcutsa) |
+| **InfraGuard Self-Scan** ⭐ | **Dogfood pattern** — proje kendi kendisini Checkov ile tarar |
 
-1. **AI Destekli Zafiyet Yönetim Paneli** (Python CLI) — Nuclei + Nmap + LLM destekli remediation
-2. **DevSecOps Portfolyo Sitesi** (Next.js) — SonarCloud + Trivy + ZAP entegre CI/CD
-3. **InfraGuard Studio** (Bu proje) — Deploy öncesi IaC güvenlik gate'i
+### 2. Deploy to Production
+- Security gate yeşil olursa otomatik tetiklenir
+- SSH ile VPS'e bağlanır, `deploy.sh` script çalıştırır
+- Git pull → backend reinstall → frontend rebuild → systemd restart
+- ~20 saniye
 
-Bu üçü birlikte DevSecOps yaşam döngüsünün tüm aşamalarını kapsıyor: **tespit → güvenli geliştirme → deployment öncesi denetim**.
+### 3. DAST Scan (OWASP ZAP)
+- Deploy tamamlandıktan sonra **canlı siteye** baseline scan
+- HTTP security headers, XSS potansiyel, CORS misconfiguration
+- HTML rapor + JSON + SARIF artifact olarak 30 gün saklanır
 
-## 📝 Lisans
+---
 
-MIT
+## 🔒 Güvenlik Tasarımı
 
-## 👤 Yazar
+### Backend Hardening
+- **Sandbox**: Her tarama izole UUID dizininde, geçici dosyalarla
+- **Subprocess güvenliği**: `shell=False`, 30s timeout, `sys.executable` ile path injection engelleme
+- **Concurrency limit**: `Semaphore(2)` — DoS koruması
+- **Input validation**: 50KB dosya boyutu limiti, null byte kontrolü, file type whitelist
 
-**Muhammed Asef**
+### LLM Cost Exhaustion Koruması (4 katman)
+1. **Persistent cache** — Aynı kural için tek çağrı
+2. **Daily budget** — Sunucu seviyesi günlük çağrı limiti
+3. **IP rate limit** — Saatte 5 yeni kural/IP
+4. **OpenAI hard limit** — Hesap seviyesi $5 cap
 
-Aspiring DevSecOps Engineer
+### Network Security
+- **HTTPS only** (Let's Encrypt, otomatik yenileme)
+- **HSTS, CSP, X-Frame-Options, COEP/COOP/CORP** header'ları
+- **CORS whitelist** (sadece izinli origin'ler)
+- **Cloudflare DNS** (DDoS koruması mevcut)
 
-[LinkedIn](https://www.linkedin.com/in/muhammedasef/) • [GitHub](https://github.com/MuhammedAsef)
+### Pipeline Security
+- **SSH key GitHub Secrets'ta**, asla kodda değil
+- **Workflow permissions** minimum yetkili (least privilege)
+- **SARIF upload** otomatik GitHub Security tab'ine
+
+---
+
+## 📊 Mülakat Anlatım Noktaları
+
+> "Bu proje **DevSecOps döngüsünün tamamını** kapsıyor. Sadece bir scanner yazmadım — scanner'ı production'a koydum, kendi pipeline'ımda kendisini kullanıyorum (dogfood pattern), CSP gibi tradeoff'ları bilinçli olarak yönettim, LLM cost exhaustion saldırılarına karşı 4 katmanlı bir savunma kurdum. Her commit otomatik 4 farklı güvenlik aracından geçiyor, raporlar SARIF formatında GitHub Security tab'inde toplanıyor."
+
+---
+
+## 🧑‍💻 Yazar
+
+**Muhammed Asef** — Aspiring DevSecOps Engineer
+
+🌐 [muhammedasef.com](https://muhammedasef.com) · 💼 [LinkedIn](https://linkedin.com/in/muhammedasef) · 🐙 [GitHub](https://github.com/MuhammedAsef)
+
+---
+
+## 📜 Lisans
+
+MIT License — bkz. [LICENSE](LICENSE)
