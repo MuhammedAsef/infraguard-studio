@@ -7,27 +7,81 @@ const LANGUAGE_MAP = {
   terraform: 'hcl',
 }
 
+const SEVERITY_STYLES = {
+  CRITICAL: {
+    badge: 'bg-red-500/20 text-red-300 border-red-500/40',
+    border: 'border-l-red-500',
+    glow: 'shadow-[0_0_20px_-5px_rgba(239,68,68,0.3)]',
+    iconBg: 'bg-red-500/10 border-red-500/30',
+    iconColor: 'text-red-400',
+    label: 'KRİTİK',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    ),
+  },
+  HIGH: {
+    badge: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+    border: 'border-l-orange-500',
+    glow: 'shadow-[0_0_20px_-5px_rgba(249,115,22,0.25)]',
+    iconBg: 'bg-orange-500/10 border-orange-500/30',
+    iconColor: 'text-orange-400',
+    label: 'YÜKSEK',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  MEDIUM: {
+    badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+    border: 'border-l-yellow-500',
+    glow: 'shadow-[0_0_20px_-5px_rgba(234,179,8,0.2)]',
+    iconBg: 'bg-yellow-500/10 border-yellow-500/30',
+    iconColor: 'text-yellow-400',
+    label: 'ORTA',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  LOW: {
+    badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+    border: 'border-l-blue-500',
+    glow: 'shadow-[0_0_20px_-5px_rgba(59,130,246,0.2)]',
+    iconBg: 'bg-blue-500/10 border-blue-500/30',
+    iconColor: 'text-blue-400',
+    label: 'DÜŞÜK',
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+}
+
 function FindingCard({ finding, originalCode, fileType }) {
   const [showDiff, setShowDiff] = useState(false)
-
-  const severityStyles = {
-    CRITICAL: { badge: 'bg-red-500/20 text-red-300 border-red-500/30', border: 'border-l-red-500', label: 'KRİTİK' },
-    HIGH: { badge: 'bg-orange-500/20 text-orange-300 border-orange-500/30', border: 'border-l-orange-500', label: 'YÜKSEK' },
-    MEDIUM: { badge: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30', border: 'border-l-yellow-500', label: 'ORTA' },
-    LOW: { badge: 'bg-blue-500/20 text-blue-300 border-blue-500/30', border: 'border-l-blue-500', label: 'DÜŞÜK' },
-  }
-
-  const style = severityStyles[finding.severity] || severityStyles.MEDIUM
+  const style = SEVERITY_STYLES[finding.severity] || SEVERITY_STYLES.MEDIUM
   const hasFix = finding.fixed_code !== null && finding.fixed_code !== undefined
 
   return (
-    <div className={`bg-slate-900 border border-slate-800 border-l-4 ${style.border} rounded-lg p-4`}>
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${style.badge}`}>{style.label}</span>
+    <div className={`group bg-slate-900/80 backdrop-blur border border-slate-800 border-l-4 ${style.border} ${style.glow} rounded-lg p-4 transition-all hover:border-slate-700 hover:-translate-y-0.5`}>
+      {/* Üst kısım: ikon + severity + meta */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className={`flex-shrink-0 w-9 h-9 rounded-lg border ${style.iconBg} ${style.iconColor} flex items-center justify-center`}>
+          {style.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className={`text-xs font-bold px-2 py-0.5 rounded border ${style.badge}`}>{style.label}</span>
             <span className="text-xs text-slate-500 font-mono">{finding.check_id}</span>
-            <span className="text-xs text-slate-500">• Satır {finding.line_start}{finding.line_end !== finding.line_start && `-${finding.line_end}`}</span>
+            <span className="text-xs text-slate-500">
+              · Satır {finding.line_start}
+              {finding.line_end !== finding.line_start && `-${finding.line_end}`}
+            </span>
             {finding.enriched_by_llm && (
               <span
                 className="text-xs font-medium px-2 py-0.5 rounded border bg-purple-500/10 text-purple-300 border-purple-500/30 flex items-center gap-1"
@@ -40,7 +94,7 @@ function FindingCard({ finding, originalCode, fileType }) {
               </span>
             )}
           </div>
-          <h4 className="text-white font-semibold">{finding.title}</h4>
+          <h4 className="text-white font-semibold leading-snug">{finding.title}</h4>
         </div>
       </div>
 
@@ -52,17 +106,16 @@ function FindingCard({ finding, originalCode, fileType }) {
       </div>
 
       {finding.code_snippet && (
-        <div className="mt-3 bg-slate-950 border border-slate-800 rounded px-3 py-2">
-          <code className="text-xs text-red-300 font-mono">{finding.code_snippet}</code>
+        <div className="mt-3 bg-slate-950/80 border border-slate-800 rounded-md px-3 py-2 overflow-x-auto">
+          <code className="text-xs text-red-300 font-mono whitespace-pre">{finding.code_snippet}</code>
         </div>
       )}
 
-      {/* Düzeltme butonu — sadece fixed_code varsa görünür */}
       {hasFix && (
         <div className="mt-3">
           <button
             onClick={() => setShowDiff(!showDiff)}
-            className="flex items-center gap-2 text-xs font-medium bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/30 px-3 py-1.5 rounded-md transition-colors"
+            className="flex items-center gap-2 text-xs font-medium bg-gradient-to-r from-emerald-500/10 to-green-500/10 hover:from-emerald-500/20 hover:to-green-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-md transition-all hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.4)]"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
