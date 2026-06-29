@@ -7,6 +7,8 @@ import FileTypeSelector from './components/FileTypeSelector'
 import Footer from './components/Footer'
 import RepoUploader from './components/RepoUploader'
 import MultiFileResultPanel from './components/MultiFileResultPanel'
+import ScanHistory from './components/ScanHistory'
+import { useScanHistory } from './hooks/useScanHistory'
 import { scanCode, scanRepo } from './services/api'
 
 // Her dosya tipi için varsayılan kod
@@ -66,6 +68,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  // Tarama geçmişi (browser localStorage)
+  const { history, addEntry, removeEntry, clearAll } = useScanHistory()
+
   // Repo state'leri
   const [repoResult, setRepoResult] = useState(null)
   const [isRepoLoading, setIsRepoLoading] = useState(false)
@@ -91,11 +96,23 @@ function App() {
     try {
       const data = await scanCode(code, fileType, 'tr')
       setResult(data)
+      addEntry(data, fileType)  // Geçmişe ekle
     } catch (err) {
       setError(err.message || 'Bilinmeyen bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  function handleReopen(entry) {
+    // Geçmişten bir taramayı yeniden aç
+    setMode('code')
+    setFileType(entry.file_type)
+    setResult(entry.result_snapshot)
+    setError(null)
+    setIsLoading(false)
+    // Smooth scroll up
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function handleRepoScan(zipFile) {
@@ -194,6 +211,14 @@ function App() {
               Hassas dosyalar paylaşmayınız.
             </p>
           </div>
+
+          {/* Tarama Geçmişi */}
+          <ScanHistory
+            history={history}
+            onReopen={handleReopen}
+            onRemove={removeEntry}
+            onClearAll={clearAll}
+          />
 
           {/* MODE SWITCHER */}
           <div className="flex justify-center mb-6">
