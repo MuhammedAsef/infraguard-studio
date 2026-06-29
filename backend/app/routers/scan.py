@@ -207,3 +207,114 @@ async def scan_to_pdf(scan_request: ScanRequest, request: Request):
                     "error_code": "PDF_ERROR",
                 },
             )
+
+from fastapi import UploadFile, File
+from app.scanners.multi_file_scanner import (
+    scan_zip_file,
+    MAX_ZIP_SIZE_BYTES,
+)
+
+
+@router.post("/scan/multi")
+async def scan_multi_file(
+    request: Request,
+    file: UploadFile = File(...),
+    lang: str = "tr",
+):
+    """
+    Zip dosyasını al, içindeki tüm IaC dosyalarını topluca tara.
+
+    Güvenlik:
+    - Max 10MB zip
+    - Max 50 dosya
+    - Zip slip koruması
+    - Sandbox'lanmış geçici dizin (işlem sonrası silinir)
+    """
+
+    # Concurrency kontrolü
+    if _scan_semaphore.locked():
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "Sunucu şu an yoğun. Lütfen birkaç saniye sonra tekrar deneyin.",
+                "error_code": "RATE_LIMITED",
+            },
+        )
+
+    # Dosya tipini kontrol et
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Sadece .zip dosyası kabul edilir.",
+                "error_code": "INVALID_FILE_TYPE",
+            },
+        )
+
+    # Lang validation
+    if lang not in ("tr", "en"):
+        lang = "tr"
+
+    # Dosya içeriğini oku (memory'de)
+    try:
+        zip_bytes = await file.read()
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Dosya okunamadı.",
+                "error_code": "FILE_READ_ERROR",
+            },
+        )
+
+    # Erken boyut kontrolü (memory'i şişirmemek için)
+    if len(zip_bytes) > MAX_ZIP_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail={
+                "error": f"Zip çok büyük. Maksimum {MAX_ZIP_SIZE_BYTES // 1024 // 1024}MB.",
+                "error_code": "FILE_TOO_LARGE",
+            },
+        )
+
+    if len(zip_bytes) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "Boş dosya yüklendi.",
+                "error_code": "EMPTY_FILE",
+            },
+        )
+
+    async with _scan_semaphore:
+        try:
+            # Client IP (LLM rate limit için)
+            client_ip = request.client.host if request.client else "anonymous"
+
+            # Asıl tarama (thread'e at, blocking olmasın)
+            result = await asyncio.to_thread(
+                scan_zip_file, zip_bytes, lang, client_ip
+            )
+
+            return result
+
+        except ValueError as e:
+            # Zip slip, boyut limiti, bozuk zip vb.
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": str(e),
+                    "error_code": "INVALID_ZIP",
+                },
+            )
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "Multi-file tarama sırasında hata oluştu.",
+                    "error_code": "MULTI_SCAN_ERROR",
+                },
+            )

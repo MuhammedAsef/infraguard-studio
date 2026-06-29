@@ -5,7 +5,9 @@ import ResultPanel from './components/ResultPanel'
 import SampleSelector from './components/SampleSelector'
 import FileTypeSelector from './components/FileTypeSelector'
 import Footer from './components/Footer'
-import { scanCode } from './services/api'
+import RepoUploader from './components/RepoUploader'
+import MultiFileResultPanel from './components/MultiFileResultPanel'
+import { scanCode, scanRepo } from './services/api'
 
 // Her dosya tipi için varsayılan kod
 const DEFAULT_CODES = {
@@ -54,11 +56,20 @@ resource "aws_security_group" "web" {
 }
 
 function App() {
+  // Mode: 'code' (tek dosya yapıştır) veya 'repo' (zip yükle)
+  const [mode, setMode] = useState('code')
+
+  // Tek dosya state'leri
   const [fileType, setFileType] = useState('dockerfile')
   const [code, setCode] = useState(DEFAULT_CODES.dockerfile)
   const [result, setResult] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
+
+  // Repo state'leri
+  const [repoResult, setRepoResult] = useState(null)
+  const [isRepoLoading, setIsRepoLoading] = useState(false)
+  const [repoError, setRepoError] = useState(null)
 
   function handleFileTypeChange(newType) {
     setFileType(newType)
@@ -84,6 +95,21 @@ function App() {
       setError(err.message || 'Bilinmeyen bir hata oluştu')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function handleRepoScan(zipFile) {
+    setIsRepoLoading(true)
+    setRepoError(null)
+    setRepoResult(null)
+
+    try {
+      const data = await scanRepo(zipFile, 'tr')
+      setRepoResult(data)
+    } catch (err) {
+      setRepoError(err.message || 'Bilinmeyen bir hata oluştu')
+    } finally {
+      setIsRepoLoading(false)
     }
   }
 
@@ -169,49 +195,104 @@ function App() {
             </p>
           </div>
 
-          {/* Dosya tipi sekmeleri */}
-          <FileTypeSelector selected={fileType} onChange={handleFileTypeChange} />
-
-          {/* İki sütunlu layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <div className="flex items-center justify-between mb-3 gap-2">
-                <h3 className="text-base sm:text-lg font-semibold">Kodunuzu Yapıştırın</h3>
-                <button
-                  onClick={handleScan}
-                  disabled={isLoading}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 text-sm sm:text-base"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Taranıyor...
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                      Tara
-                    </>
-                  )}
-                </button>
-              </div>
-              <SampleSelector fileType={fileType} onSelect={setCode} />
-              <CodeEditor code={code} onChange={setCode} fileType={fileType} />
-            </div>
-
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Güvenlik Raporu</h3>
-              <ResultPanel
-                result={result}
-                isLoading={isLoading}
-                error={error}
-                originalCode={code}
-                fileType={fileType}
-              />
+          {/* MODE SWITCHER */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex bg-slate-900 border border-slate-800 rounded-lg p-1">
+              <button
+                onClick={() => setMode('code')}
+                className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-md text-sm font-medium transition-all ${
+                  mode === 'code'
+                    ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                Kod Yapıştır
+              </button>
+              <button
+                onClick={() => setMode('repo')}
+                className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-md text-sm font-medium transition-all ${
+                  mode === 'repo'
+                    ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                Repo Yükle
+                <span className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded">YENİ</span>
+              </button>
             </div>
           </div>
+
+          {/* CODE MODE */}
+          {mode === 'code' && (
+            <>
+              <FileTypeSelector selected={fileType} onChange={handleFileTypeChange} />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center justify-between mb-3 gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold">Kodunuzu Yapıştırın</h3>
+                    <button
+                      onClick={handleScan}
+                      disabled={isLoading}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 text-sm sm:text-base"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Taranıyor...
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          Tara
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <SampleSelector fileType={fileType} onSelect={setCode} />
+                  <CodeEditor code={code} onChange={setCode} fileType={fileType} />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Güvenlik Raporu</h3>
+                  <ResultPanel
+                    result={result}
+                    isLoading={isLoading}
+                    error={error}
+                    originalCode={code}
+                    fileType={fileType}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* REPO MODE */}
+          {mode === 'repo' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-3">Repo Yükle</h3>
+                <RepoUploader onScan={handleRepoScan} isLoading={isRepoLoading} />
+              </div>
+
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-3">Güvenlik Raporu</h3>
+                <MultiFileResultPanel
+                  result={repoResult}
+                  isLoading={isRepoLoading}
+                  error={repoError}
+                />
+              </div>
+            </div>
+          )}
         </main>
 
         <Footer />

@@ -70,3 +70,31 @@ export async function downloadScanPdf(code, fileType, lang = 'tr') {
   document.body.removeChild(a)
   window.URL.revokeObjectURL(url)
 }
+
+/**
+ * Zip dosyasını yükle ve içindeki tüm IaC dosyalarını topluca tara
+ */
+export async function scanRepo(zipFile, lang = 'tr') {
+  // FormData ile multipart upload
+  const formData = new FormData()
+  formData.append('file', zipFile)
+  formData.append('lang', lang)
+
+  const response = await fetch(`${API_BASE_URL}/scan/multi`, {
+    method: 'POST',
+    body: formData,
+    // ÖNEMLİ: Content-Type header'ı SET ETMİYORUZ
+    // Browser otomatik olarak multipart/form-data; boundary=... ayarlar
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    const errorMessage =
+      errorData.detail?.error ||
+      errorData.detail ||
+      `Sunucu hatası (${response.status})`
+    throw new Error(errorMessage)
+  }
+
+  return await response.json()
+}
