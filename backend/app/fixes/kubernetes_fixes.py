@@ -137,12 +137,111 @@ def fix_default_namespace(original_code: str, finding: dict) -> str | None:
 
     return None
 
+def fix_host_namespaces(original_code: str, finding: dict) -> str | None:
+    """
+    CKV_K8S_17/18/19: hostPID, hostIPC, hostNetwork true.
+
+    Çözüm: true → false
+    """
+    fixed = original_code
+    changed = False
+
+    for field in ["hostPID", "hostIPC", "hostNetwork"]:
+        pattern = rf"({field}\s*:\s*)true"
+        if re.search(pattern, fixed, re.IGNORECASE):
+            fixed = re.sub(pattern, r"\1false", fixed, flags=re.IGNORECASE)
+            changed = True
+
+    return fixed if changed else None
+
+
+def fix_read_only_root_fs(original_code: str, finding: dict) -> str | None:
+    """
+    CKV_K8S_22: Read-only root filesystem kullanılmıyor.
+
+    Çözüm: readOnlyRootFilesystem: false → true
+    Veya yoksa: dokunma (structural değişiklik gerekir).
+    """
+    if re.search(r"readOnlyRootFilesystem\s*:\s*false", original_code, re.IGNORECASE):
+        fixed = re.sub(
+            r"(readOnlyRootFilesystem\s*:\s*)false",
+            r"\1true",
+            original_code,
+            flags=re.IGNORECASE,
+        )
+        return fixed
+
+    return None
+
+
+def fix_image_pull_policy(original_code: str, finding: dict) -> str | None:
+    """
+    CKV_K8S_15: imagePullPolicy 'Always' olmalı.
+
+    Çözüm: imagePullPolicy: IfNotPresent/Never → Always
+    """
+    fixed = original_code
+    changed = False
+
+    for old_value in ["IfNotPresent", "Never"]:
+        pattern = rf"(imagePullPolicy\s*:\s*){old_value}\b"
+        if re.search(pattern, fixed):
+            fixed = re.sub(pattern, r"\1Always", fixed)
+            changed = True
+
+    return fixed if changed else None
+
+
+def fix_automount_service_account(original_code: str, finding: dict) -> str | None:
+    """
+    CKV_K8S_38/42: automountServiceAccountToken default'da true.
+
+    Çözüm: automountServiceAccountToken: true → false
+    """
+    if re.search(r"automountServiceAccountToken\s*:\s*true", original_code, re.IGNORECASE):
+        fixed = re.sub(
+            r"(automountServiceAccountToken\s*:\s*)true",
+            r"\1false",
+            original_code,
+            flags=re.IGNORECASE,
+        )
+        return fixed
+
+    return None
+
+
+def fix_host_port(original_code: str, finding: dict) -> str | None:
+    """
+    CKV_K8S_26: hostPort kullanılmamalı.
+
+    Çözüm: hostPort satırını kaldır (containerPort kalır).
+    """
+    lines = original_code.split("\n")
+    fixed_lines = []
+    changed = False
+
+    for line in lines:
+        if re.match(r"^\s*hostPort\s*:\s*\d+\s*$", line):
+            # Satırı atla
+            changed = True
+            continue
+        fixed_lines.append(line)
+
+    return "\n".join(fixed_lines) if changed else None
 
 # Check ID → Fix function mapping
 FIX_FUNCTIONS = {
-    "CKV_K8S_14": fix_latest_image,
-    "CKV_K8S_16": fix_privileged_container,
-    "CKV_K8S_20": fix_privilege_escalation,  # allowPrivilegeEscalation - CKV_K8S_20
-    "CKV_K8S_23": fix_run_as_root,            # runAsNonRoot/runAsUser - CKV_K8S_23
-    "CKV_K8S_21": fix_default_namespace,
+    "CKV_K8S_14": fix_latest_image,                  # latest image tag
+    "CKV_K8S_15": fix_image_pull_policy,             # imagePullPolicy Always
+    "CKV_K8S_16": fix_privileged_container,          # privileged: true
+    "CKV_K8S_17": fix_host_namespaces,               # hostPID
+    "CKV_K8S_18": fix_host_namespaces,               # hostIPC
+    "CKV_K8S_19": fix_host_namespaces,               # hostNetwork
+    "CKV_K8S_20": fix_privilege_escalation,          # allowPrivilegeEscalation
+    "CKV_K8S_21": fix_default_namespace,             # default namespace
+    "CKV_K8S_22": fix_read_only_root_fs,             # readOnlyRootFilesystem
+    "CKV_K8S_23": fix_run_as_root,                   # runAsNonRoot/runAsUser
+    "CKV_K8S_26": fix_host_port,                     # hostPort
+    "CKV_K8S_38": fix_automount_service_account,     # automountServiceAccountToken
+    "CKV_K8S_42": fix_automount_service_account,     # automountServiceAccountToken (alternative)
 }

@@ -208,13 +208,114 @@ def fix_ssh_port_exposed(original_code: str, finding: dict) -> str | None:
 
     return "\n".join(fixed_lines) if changed else None
 
+def fix_sudo_usage(original_code: str, finding: dict) -> str | None:
+    """
+    CKV2_DOCKER_1: sudo kullanımı.
+
+    Çözüm: sudo komutlarını kaldır (USER ile zaten doğru kullanıcı set ediliyorsa).
+    """
+    lines = original_code.split("\n")
+    fixed_lines = []
+    changed = False
+
+    for line in lines:
+        # RUN sudo ... → RUN ...
+        match = re.match(r"^(\s*RUN\s+)sudo\s+(.+)$", line)
+        if match:
+            prefix, rest = match.groups()
+            fixed_lines.append(f"{prefix}{rest}")
+            changed = True
+        else:
+            fixed_lines.append(line)
+
+    return "\n".join(fixed_lines) if changed else None
+
+
+def fix_curl_insecure(original_code: str, finding: dict) -> str | None:
+    """
+    CKV2_DOCKER_2: curl -k veya --insecure flag'i ile sertifika doğrulaması atlanıyor.
+
+    Çözüm: -k ve --insecure flag'lerini kaldır.
+    """
+    if " -k " not in original_code and " --insecure " not in original_code and \
+       " -k\n" not in original_code and " --insecure\n" not in original_code:
+        return None
+
+    fixed = re.sub(r"(\bcurl\b[^\n]*?)\s+-k\b", r"\1", original_code)
+    fixed = re.sub(r"(\bcurl\b[^\n]*?)\s+--insecure\b", r"\1", fixed)
+
+    return fixed if fixed != original_code else None
+
+
+def fix_wget_insecure(original_code: str, finding: dict) -> str | None:
+    """
+    CKV2_DOCKER_3: wget --no-check-certificate kullanılıyor.
+
+    Çözüm: --no-check-certificate flag'ini kaldır.
+    """
+    if "--no-check-certificate" not in original_code:
+        return None
+
+    fixed = re.sub(r"(\bwget\b[^\n]*?)\s+--no-check-certificate\b", r"\1", original_code)
+
+    return fixed if fixed != original_code else None
+
+
+def fix_apt_to_apt_get(original_code: str, finding: dict) -> str | None:
+    """
+    CKV_DOCKER_9: apt yerine apt-get kullanılmalı.
+
+    Çözüm: 'apt install' → 'apt-get install', 'apt update' → 'apt-get update' vb.
+    """
+    lines = original_code.split("\n")
+    fixed_lines = []
+    changed = False
+
+    for line in lines:
+        # 'apt' başına/sonuna boşluk olan komutu yakala (ama 'apt-get' veya 'apt-cache' etkilenmesin)
+        new_line = re.sub(
+            r"(\bRUN\b[^\n]*?\s+)apt(\s+)(install|update|upgrade|remove|purge|autoremove)",
+            r"\1apt-get\2\3",
+            line
+        )
+        if new_line != line:
+            fixed_lines.append(new_line)
+            changed = True
+        else:
+            fixed_lines.append(line)
+
+    return "\n".join(fixed_lines) if changed else None
+
+
+def fix_pip_no_cache(original_code: str, finding: dict) -> str | None:
+    """
+    CKV_DOCKER_15: pip install --no-cache-dir kullanılmalı.
+
+    Çözüm: 'pip install' komutlarına --no-cache-dir ekle (yoksa).
+    """
+    if "--no-cache-dir" in original_code:
+        return None  # Zaten var
+
+    # pip install veya pip3 install pattern
+    pattern = re.compile(r"(\bpip3?\s+install\b)(?!\s+--no-cache-dir)")
+    if not pattern.search(original_code):
+        return None
+
+    fixed = pattern.sub(r"\1 --no-cache-dir", original_code)
+
+    return fixed if fixed != original_code else None
 
 # Check ID → Fix function mapping
 FIX_FUNCTIONS = {
-    "CKV_DOCKER_1": fix_ssh_port_exposed,    # CKV_DOCKER_1 = SSH portu (22) açık
-    "CKV_DOCKER_2": fix_missing_healthcheck, # CKV_DOCKER_2 = HEALTHCHECK eksik
-    "CKV_DOCKER_3": fix_user_root,            # CKV_DOCKER_3 = USER yok / root çalışıyor
-    "CKV_DOCKER_4": fix_add_to_copy,          # CKV_DOCKER_4 = ADD yerine COPY
-    "CKV_DOCKER_7": fix_latest_tag,           # CKV_DOCKER_7 = latest tag
-    "CKV_DOCKER_8": fix_user_root,            # CKV_DOCKER_8 = son USER root
+    "CKV_DOCKER_1": fix_ssh_port_exposed,      # SSH portu (22) açık
+    "CKV_DOCKER_2": fix_missing_healthcheck,   # HEALTHCHECK eksik
+    "CKV_DOCKER_3": fix_user_root,              # USER yok / root çalışıyor
+    "CKV_DOCKER_4": fix_add_to_copy,            # ADD yerine COPY
+    "CKV_DOCKER_7": fix_latest_tag,             # latest tag
+    "CKV_DOCKER_8": fix_user_root,              # son USER root
+    "CKV_DOCKER_9": fix_apt_to_apt_get,         # apt yerine apt-get
+    "CKV_DOCKER_15": fix_pip_no_cache,          # pip --no-cache-dir
+    "CKV2_DOCKER_1": fix_sudo_usage,            # sudo kullanımı
+    "CKV2_DOCKER_2": fix_curl_insecure,         # curl -k
+    "CKV2_DOCKER_3": fix_wget_insecure,         # wget --no-check-certificate
 }
