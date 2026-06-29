@@ -152,14 +152,6 @@ Her commit, **6 aşamalı bir DevSecOps gate**'inden geçer:
 | Hazır demo dosyası | 10 |
 | Production deploy süresi | ~5 dakika (commit → live) |
 
----
-
-## Mülakat Anlatım Noktaları
-
-> "Bu proje **DevSecOps döngüsünün tamamını** kapsıyor. Sadece bir scanner yazmadım — scanner'ı production'a koydum, kendi pipeline'ımda kendisini kullanıyorum (dogfood pattern), CSP gibi tradeoff'ları bilinçli olarak yönettim, LLM cost exhaustion saldırılarına karşı 4 katmanlı bir savunma kurdum. Her commit otomatik 4 farklı güvenlik aracından geçiyor, raporlar SARIF formatında GitHub Security tab'inde toplanıyor. Multi-file scan ile bir geliştirici tüm repo'sunu tek tıkla tarayabiliyor; geçmiş kullanıcının kendi tarayıcısında lokal saklanıyor — kullanıcı kodunun sunucuya hiç yansımadığı bir mimari kurdum."
-
----
-
 ## Yazar
 
 **Muhammed Asef** — Aspiring DevSecOps Engineer
