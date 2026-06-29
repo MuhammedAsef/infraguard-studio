@@ -316,6 +316,134 @@ DOCKERFILE_RULES = {
             "https://docs.prismacloud.io/en/enterprise-edition/policy-reference/docker-policies/ensure-that-packages-with-untrusted-or-missing-signatures-are-not-used-by-apt-get",
         ],
     },
+    # === Ek Dockerfile kuralları ===
+    "CKV_DOCKER_12": {
+        "severity": "MEDIUM",
+        "category": "Best Practice",
+        "title_tr": "ADD/COPY ile dosya sahipliği belirlenmemiş",
+        "title_en": "Ensure that the chown flag is used with COPY/ADD",
+        "explanation_tr": (
+            "COPY ve ADD komutları varsayılan olarak dosyaları root sahipliğiyle kopyalar. "
+            "Non-root kullanıcıyla çalışan container'larda bu, dosya erişim sorunlarına ve "
+            "güvenlik risklerine yol açabilir. COPY --chown=appuser:appgroup ile sahipliği belirleyin."
+        ),
+        "explanation_en": (
+            "COPY and ADD copy files with root ownership by default. In containers running as "
+            "non-root, this can cause file access issues and security risks. "
+            "Use COPY --chown=appuser:appgroup to set ownership explicitly."
+        ),
+        "references": [
+            "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/",
+        ],
+    },
+    "CKV_DOCKER_13": {
+        "severity": "MEDIUM",
+        "category": "Supply Chain",
+        "title_tr": "Bilinen güvensiz registry kullanılıyor",
+        "title_en": "Known insecure registry being used",
+        "explanation_tr": (
+            "HTTP (TLS olmayan) registry'lerden image çekmek, MITM saldırılarıyla image'ın "
+            "değiştirilmesine olanak verir. Sadece HTTPS destekleyen trusted registry'leri kullanın."
+        ),
+        "explanation_en": (
+            "Pulling images from HTTP (non-TLS) registries allows MITM attacks to alter images. "
+            "Use only HTTPS-supported, trusted registries."
+        ),
+        "references": [
+            "https://docs.docker.com/registry/deploying/",
+        ],
+    },
+    "CKV_DOCKER_14": {
+        "severity": "MEDIUM",
+        "category": "Resource Management",
+        "title_tr": "Container memory limit tanımlanmamış",
+        "title_en": "Ensure that HEALTHCHECK instructions have been added to container images",
+        "explanation_tr": (
+            "Container'a memory limit konmadığında, runaway process'ler tüm host belleğini "
+            "tüketebilir ve diğer container'ları etkileyebilir. docker run --memory ile limit konmalı."
+        ),
+        "explanation_en": (
+            "Without a memory limit, runaway processes can consume all host memory, "
+            "affecting other containers. Set a limit with docker run --memory."
+        ),
+        "references": [
+            "https://docs.docker.com/config/containers/resource_constraints/",
+        ],
+    },
+    "CKV_DOCKER_15": {
+        "severity": "MEDIUM",
+        "category": "Container Hardening",
+        "title_tr": "Image içinde paket cache temizlenmemiş",
+        "title_en": "Ensure that PIP install has the --no-cache-dir option",
+        "explanation_tr": (
+            "pip install --no-cache-dir kullanılmadığında, paket cache image'da kalır ve "
+            "image boyutu gereksiz yere büyür. Ayrıca image içinde gereksiz dosyalar saldırı "
+            "yüzeyini artırır. --no-cache-dir flag'i her zaman kullanılmalıdır."
+        ),
+        "explanation_en": (
+            "Without pip install --no-cache-dir, package cache remains in the image, "
+            "unnecessarily increasing its size and attack surface. Always use --no-cache-dir."
+        ),
+        "references": [
+            "https://pip.pypa.io/en/stable/topics/caching/",
+        ],
+    },
+    "CKV2_DOCKER_4": {
+        "severity": "HIGH",
+        "category": "Container Hardening",
+        "title_tr": "Container içinde gpg ile imza doğrulama atlanmış",
+        "title_en": "Ensure that gpg signature verification is not skipped",
+        "explanation_tr": (
+            "rpm --nosignature veya benzeri flag'lerle paket imza doğrulamasının atlanması, "
+            "kötü amaçlı veya tampered paketlerin yüklenmesine olanak verir. "
+            "İmza doğrulaması her zaman aktif olmalıdır."
+        ),
+        "explanation_en": (
+            "Skipping package signature verification with rpm --nosignature or similar flags "
+            "allows installation of malicious or tampered packages. "
+            "Signature verification must always be enabled."
+        ),
+        "references": [
+            "https://www.redhat.com/sysadmin/rpm-signing-keys",
+        ],
+    },
+    "CKV2_DOCKER_5": {
+        "severity": "MEDIUM",
+        "category": "Container Hardening",
+        "title_tr": "JSON formatında CMD/ENTRYPOINT kullanılmalı",
+        "title_en": "Ensure CMD and ENTRYPOINT use JSON array format",
+        "explanation_tr": (
+            "Shell form (CMD command param1) yerine exec form (CMD [\"command\", \"param1\"]) "
+            "kullanılmalıdır. Shell form, shell injection saldırılarına açıktır ve sinyallerin "
+            "doğru şekilde iletilmesini engeller."
+        ),
+        "explanation_en": (
+            "Use exec form (CMD [\"command\", \"param1\"]) instead of shell form (CMD command param1). "
+            "Shell form is vulnerable to shell injection and prevents proper signal forwarding."
+        ),
+        "references": [
+            "https://docs.docker.com/reference/dockerfile/#cmd",
+        ],
+    },
+    "CKV2_DOCKER_6": {
+        "severity": "HIGH",
+        "category": "Container Hardening",
+        "title_tr": "Container içinde port 22 (SSH) servisi çalıştırılıyor",
+        "title_en": "Ensure that no container is running SSH service",
+        "explanation_tr": (
+            "Container içinde SSH daemon çalıştırmak best practice'e aykırıdır. "
+            "Container'a erişim için docker exec veya kubectl exec kullanılmalıdır. "
+            "SSH servisi attack surface'i büyütür ve credential management problemine yol açar."
+        ),
+        "explanation_en": (
+            "Running an SSH daemon inside a container violates best practices. "
+            "Use docker exec or kubectl exec to access containers. "
+            "SSH service enlarges attack surface and creates credential management issues."
+        ),
+        "references": [
+            "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/",
+        ],
+    },
 }
 
 
@@ -831,6 +959,249 @@ KUBERNETES_RULES = {
             "https://kubernetes.io/docs/concepts/containers/images/#image-names",
         ],
     },
+    # === Ek Kubernetes kuralları ===
+    "CKV_K8S_24": {
+        "severity": "MEDIUM",
+        "category": "Best Practice",
+        "title_tr": "PodSecurityPolicy / Pod Security Standards uygulanmamış",
+        "title_en": "Do not allow containers without PodSecurityPolicy or PSS",
+        "explanation_tr": (
+            "PodSecurityPolicy (deprecated) veya yeni Pod Security Standards (PSS) olmadan, "
+            "cluster'a güvensiz pod'lar deploy edilebilir. Namespace seviyesinde Pod Security "
+            "Standards (restricted/baseline/privileged) uygulanmalıdır."
+        ),
+        "explanation_en": (
+            "Without PodSecurityPolicy (deprecated) or Pod Security Standards (PSS), "
+            "insecure pods can be deployed to the cluster. Apply Pod Security Standards "
+            "at namespace level (restricted/baseline/privileged)."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/security/pod-security-standards/",
+        ],
+    },
+    "CKV_K8S_32": {
+        "severity": "HIGH",
+        "category": "Container Hardening",
+        "title_tr": "AppArmor profili tanımlanmamış",
+        "title_en": "Ensure default AppArmor profile is not set to unconfined",
+        "explanation_tr": (
+            "AppArmor profili tanımlanmadığında veya 'unconfined' bırakıldığında, "
+            "container kernel seviyesinde kısıtlamalar olmadan çalışır. "
+            "Bu, container escape risklerini ciddi şekilde artırır. "
+            "container.apparmor.security.beta.kubernetes.io/<container-name> annotation'ı kullanın."
+        ),
+        "explanation_en": (
+            "Without an AppArmor profile or with 'unconfined', the container runs without "
+            "kernel-level restrictions, severely increasing container escape risks. "
+            "Use container.apparmor.security.beta.kubernetes.io/<container-name> annotation."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/tutorials/security/apparmor/",
+        ],
+    },
+    "CKV_K8S_33": {
+        "severity": "HIGH",
+        "category": "Network Security",
+        "title_tr": "Kubernetes Dashboard deploy edilmiş",
+        "title_en": "Ensure the Kubernetes dashboard is not deployed",
+        "explanation_tr": (
+            "Kubernetes Dashboard, geçmişte birçok kez güvenlik açığı nedeniyle compromise "
+            "edilmiş bir bileşendir. Production cluster'larda dashboard deploy edilmemeli, "
+            "yönetim kubectl veya benzeri CLI araçlarıyla yapılmalıdır."
+        ),
+        "explanation_en": (
+            "Kubernetes Dashboard has been compromised multiple times due to security issues. "
+            "Avoid deploying it in production clusters; manage via kubectl or similar CLI tools."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/",
+        ],
+    },
+    "CKV_K8S_34": {
+        "severity": "MEDIUM",
+        "category": "Container Hardening",
+        "title_tr": "Tiller (Helm v2) servisi tespit edildi",
+        "title_en": "Ensure Tiller (Helm V2) is not deployed",
+        "explanation_tr": (
+            "Helm v2'nin Tiller bileşeni, cluster üzerinde geniş yetkilerle çalışan bir process'tir "
+            "ve önemli güvenlik açıklarına neden olmuştur. Helm v3'e geçilmelidir; Tiller hiçbir "
+            "production cluster'da bulunmamalıdır."
+        ),
+        "explanation_en": (
+            "Helm v2's Tiller component runs with broad cluster privileges and has caused major "
+            "security issues. Migrate to Helm v3; Tiller must not exist in any production cluster."
+        ),
+        "references": [
+            "https://helm.sh/docs/faq/changes_since_helm2/",
+        ],
+    },
+    "CKV_K8S_35": {
+        "severity": "MEDIUM",
+        "category": "Secrets Management",
+        "title_tr": "Secret olarak environment variable kullanılmış",
+        "title_en": "Prefer using secrets as files over secrets as environment variables",
+        "explanation_tr": (
+            "Secret'ları environment variable olarak mount etmek; process listesinde, crash dump'larda "
+            "ve child process'lerde sızıntıya yol açar. Secret'ları volume olarak mount etmek "
+            "(filesystem) çok daha güvenlidir."
+        ),
+        "explanation_en": (
+            "Mounting secrets as environment variables leaks them via process listings, crash dumps, "
+            "and child processes. Mounting secrets as volume files is significantly safer."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/configuration/secret/",
+        ],
+    },
+    "CKV_K8S_36": {
+        "severity": "HIGH",
+        "category": "Container Hardening",
+        "title_tr": "Container'da NET_RAW dahil tehlikeli capability'ler düşürülmemiş",
+        "title_en": "Minimize the admission of containers with capabilities",
+        "explanation_tr": (
+            "NET_RAW, SYS_ADMIN, NET_ADMIN gibi capability'ler raw packet creation, "
+            "host network değişikliği ve daha fazlasına izin verir. Best practice: 'drop: [ALL]' "
+            "yapın ve sadece gerekli olanları add edin."
+        ),
+        "explanation_en": (
+            "Capabilities like NET_RAW, SYS_ADMIN, NET_ADMIN allow raw packet creation, "
+            "host network changes, and more. Best practice: 'drop: [ALL]' and add only what's required."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+        ],
+    },
+    "CKV_K8S_39": {
+        "severity": "CRITICAL",
+        "category": "Container Hardening",
+        "title_tr": "Container 'docker.sock' veya benzer host path'i mount ediyor",
+        "title_en": "Do not use the CAP_SYS_ADMIN linux capability",
+        "explanation_tr": (
+            "CAP_SYS_ADMIN, neredeyse root ile eşdeğer geniş yetkiler sağlar. "
+            "Filesystem mount, kernel modülü yükleme, namespace yönetimi gibi tehlikeli "
+            "işlemlere izin verir. Bu capability hiçbir durumda eklenmemelidir."
+        ),
+        "explanation_en": (
+            "CAP_SYS_ADMIN provides nearly root-equivalent privileges, allowing filesystem mounts, "
+            "kernel module loading, namespace management, and more. Never add this capability."
+        ),
+        "references": [
+            "https://man7.org/linux/man-pages/man7/capabilities.7.html",
+        ],
+    },
+    "CKV_K8S_41": {
+        "severity": "MEDIUM",
+        "category": "Service Account",
+        "title_tr": "Default service account aktif olarak kullanılıyor",
+        "title_en": "Ensure that default service accounts are not actively used",
+        "explanation_tr": (
+            "Default service account'ın doğrudan kullanılması least-privilege prensibine aykırıdır. "
+            "Her workload için spesifik bir service account oluşturulmalı, gerekli minimum RBAC "
+            "yetkileri o account'a bağlanmalıdır."
+        ),
+        "explanation_en": (
+            "Using the default service account directly violates least-privilege. "
+            "Create a dedicated service account per workload with minimum required RBAC permissions."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+        ],
+    },
+    "CKV_K8S_42": {
+        "severity": "MEDIUM",
+        "category": "Service Account",
+        "title_tr": "Service account otomatik mount edilmiş",
+        "title_en": "Ensure that default service accounts are not actively used",
+        "explanation_tr": (
+            "automountServiceAccountToken: false ayarlanmadan, default service account token "
+            "her pod'a otomatik mount edilir. Pod kompromize olursa saldırgan bu token ile "
+            "Kubernetes API'sine erişebilir. Açıkça gerekmedikçe false yapılmalıdır."
+        ),
+        "explanation_en": (
+            "Without automountServiceAccountToken: false, the default service account token is "
+            "auto-mounted into every pod. If compromised, attackers can access the Kubernetes API. "
+            "Set to false unless explicitly required."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/",
+        ],
+    },
+    "CKV_K8S_44": {
+        "severity": "MEDIUM",
+        "category": "Best Practice",
+        "title_tr": "Service için 'app' label tanımlanmamış",
+        "title_en": "Ensure Services do not forward traffic to pods without an 'app' label selector",
+        "explanation_tr": (
+            "Service selector'larında 'app' label'ı tanımlanmazsa, yanlış pod'lara trafik "
+            "yönlendirilebilir. Bu, hem güvenlik (yanlış servise istek) hem de operasyonel "
+            "sorunlara yol açar."
+        ),
+        "explanation_en": (
+            "Without an 'app' label in Service selectors, traffic may be forwarded to wrong pods. "
+            "This causes security issues (requests to wrong service) and operational problems."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/",
+        ],
+    },
+    "CKV_K8S_45": {
+        "severity": "LOW",
+        "category": "Best Practice",
+        "title_tr": "Resource için recommended label'lar eksik",
+        "title_en": "Ensure that Kubernetes resources have recommended labels",
+        "explanation_tr": (
+            "app.kubernetes.io/name, app.kubernetes.io/version, app.kubernetes.io/managed-by "
+            "gibi standart label'lar eksik olduğunda, resource'ların izlenmesi ve yönetimi zorlaşır. "
+            "Audit, monitoring ve troubleshooting süreçleri için gereklidir."
+        ),
+        "explanation_en": (
+            "Without standard labels like app.kubernetes.io/name, version, managed-by, "
+            "tracking and managing resources becomes difficult. Required for audit, monitoring, "
+            "and troubleshooting."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/",
+        ],
+    },
+    "CKV_K8S_49": {
+        "severity": "MEDIUM",
+        "category": "Network Security",
+        "title_tr": "NetworkPolicy tanımlanmamış",
+        "title_en": "Ensure NetworkPolicies are defined",
+        "explanation_tr": (
+            "NetworkPolicy tanımlanmamış namespace'lerde tüm pod'lar birbirine ve dış dünyaya "
+            "kısıtsız iletişim kurabilir. Bir pod kompromize olursa, lateral movement çok kolaylaşır. "
+            "Zero-trust prensibiyle, varsayılan deny politikası kurulup gerekli trafiğe explicit "
+            "izin verilmelidir."
+        ),
+        "explanation_en": (
+            "Without NetworkPolicy, all pods can communicate freely with each other and outside. "
+            "If a pod is compromised, lateral movement is trivial. Apply zero-trust: default-deny "
+            "policy with explicit allow rules for required traffic."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/concepts/services-networking/network-policies/",
+        ],
+    },
+    "CKV_K8S_68": {
+        "severity": "HIGH",
+        "category": "Network Security",
+        "title_tr": "Kubelet anonymous-auth aktif",
+        "title_en": "Ensure that the --anonymous-auth argument is set to false",
+        "explanation_tr": (
+            "Kubelet anonymous-auth: true ile yapılandırılırsa, kimliği doğrulanmamış istekler "
+            "kabul edilir. Saldırgan herhangi bir credential olmadan kubelet API'ye erişebilir. "
+            "Her zaman --anonymous-auth=false olmalıdır."
+        ),
+        "explanation_en": (
+            "If Kubelet is configured with anonymous-auth: true, unauthenticated requests are "
+            "accepted. An attacker can access the kubelet API without any credentials. "
+            "Always set --anonymous-auth=false."
+        ),
+        "references": [
+            "https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/",
+        ],
+    },
 }
 
 
@@ -1098,6 +1469,305 @@ TERRAFORM_RULES = {
         ),
         "references": [
             "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-ip-addressing.html",
+        ],
+    },
+    # === Ek AWS kuralları ===
+    "CKV_AWS_5": {
+        "severity": "HIGH",
+        "category": "Encryption",
+        "title_tr": "Elasticsearch domain encryption at rest yok",
+        "title_en": "Ensure all data stored in the Elasticsearch is securely encrypted at rest",
+        "explanation_tr": (
+            "Elasticsearch domain'inde encryption_at_rest = false ise, indekslenen tüm veri "
+            "(loglar, dokümanlar, hassas bilgiler) şifrelenmemiş olarak EBS volume'larda saklanır. "
+            "AWS infrastructure'a fiziksel erişim sağlayan saldırganlar veriyi okuyabilir."
+        ),
+        "explanation_en": (
+            "With encryption_at_rest = false on Elasticsearch domains, all indexed data "
+            "(logs, documents, sensitive info) is stored unencrypted on EBS volumes. "
+            "Attackers with physical AWS access can read the data."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/elasticsearch-service/latest/developerguide/encryption-at-rest.html",
+        ],
+    },
+    "CKV_AWS_7": {
+        "severity": "MEDIUM",
+        "category": "Identity & Access",
+        "title_tr": "IAM key rotation 90 günden uzun",
+        "title_en": "Ensure IAM password policy requires keys to be rotated every 90 days or less",
+        "explanation_tr": (
+            "IAM access key'ler 90 günden uzun rotate edilmediğinde, sızdırılmış bir key'in "
+            "saldırgan tarafından uzun süre kötüye kullanılma riski büyür. "
+            "Düzenli rotation, compromise window'unu kısaltır."
+        ),
+        "explanation_en": (
+            "IAM access keys not rotated within 90 days increase the window for misuse if leaked. "
+            "Regular rotation shortens the compromise window."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html",
+        ],
+    },
+    "CKV_AWS_28": {
+        "severity": "HIGH",
+        "category": "Encryption",
+        "title_tr": "DynamoDB tablo encryption at rest yok",
+        "title_en": "Ensure DynamoDB tables have point in time recovery enabled",
+        "explanation_tr": (
+            "DynamoDB tablolarında server_side_encryption.enabled = true olmadığında, "
+            "tabloya yazılan tüm hassas veriler şifrelenmemiş şekilde saklanır. "
+            "KMS ile encryption-at-rest standart hale gelmelidir."
+        ),
+        "explanation_en": (
+            "Without server_side_encryption.enabled = true on DynamoDB tables, all sensitive data "
+            "is stored unencrypted. KMS-based encryption-at-rest should be standard."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/EncryptionAtRest.html",
+        ],
+    },
+    "CKV_AWS_33": {
+        "severity": "MEDIUM",
+        "category": "Logging & Audit",
+        "title_tr": "CloudTrail multi-region etkin değil",
+        "title_en": "Ensure CloudTrail is enabled in all regions",
+        "explanation_tr": (
+            "CloudTrail tek region'da çalışırsa, başka region'larda yapılan saldırı aktiviteleri "
+            "loglanmaz. is_multi_region_trail = true olmalıdır ki tüm AWS API çağrıları "
+            "merkezi olarak kayıt altına alınsın."
+        ),
+        "explanation_en": (
+            "If CloudTrail runs in a single region, attack activities in other regions are not "
+            "logged. Set is_multi_region_trail = true to centrally record all AWS API calls."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/receive-cloudtrail-log-files-from-multiple-regions.html",
+        ],
+    },
+    "CKV_AWS_34": {
+        "severity": "HIGH",
+        "category": "Network Security",
+        "title_tr": "CloudFront viewer protocol HTTPS zorunlu değil",
+        "title_en": "Ensure CloudFront distribution ViewerProtocolPolicy is set to HTTPS",
+        "explanation_tr": (
+            "CloudFront distribution'da viewer_protocol_policy = 'allow-all' ise, HTTP üzerinden "
+            "trafik kabul edilir. Bu, MITM saldırılarına ve plaintext credential iletimine yol açar. "
+            "'redirect-to-https' veya 'https-only' kullanılmalıdır."
+        ),
+        "explanation_en": (
+            "With viewer_protocol_policy = 'allow-all' on CloudFront, HTTP traffic is accepted, "
+            "enabling MITM attacks and plaintext credential exposure. "
+            "Use 'redirect-to-https' or 'https-only'."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/using-https.html",
+        ],
+    },
+    "CKV_AWS_45": {
+        "severity": "HIGH",
+        "category": "Secrets Management",
+        "title_tr": "Lambda environment variable'larda hardcoded secret",
+        "title_en": "Ensure no hardcoded secrets exist in lambda environment",
+        "explanation_tr": (
+            "Lambda environment variable'larında API key, password gibi secret'ları tutmak; "
+            "Terraform state dosyasında ve AWS console'da plain text olarak görünür hale getirir. "
+            "AWS Secrets Manager veya Parameter Store kullanılmalıdır."
+        ),
+        "explanation_en": (
+            "Storing secrets like API keys or passwords in Lambda environment variables exposes "
+            "them in Terraform state and AWS console in plain text. "
+            "Use AWS Secrets Manager or Parameter Store instead."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html",
+        ],
+    },
+    "CKV_AWS_50": {
+        "severity": "MEDIUM",
+        "category": "Logging & Audit",
+        "title_tr": "Lambda X-Ray tracing aktif değil",
+        "title_en": "X-Ray tracing is enabled for Lambda",
+        "explanation_tr": (
+            "Lambda function'larında tracing_config.mode = 'Active' olmadığında, hata ayıklama "
+            "ve performans analizi için gerekli trace data eksik kalır. Bu, güvenlik incidentlerinde "
+            "forensic analizi zorlaştırır."
+        ),
+        "explanation_en": (
+            "Without tracing_config.mode = 'Active' on Lambda functions, trace data needed for "
+            "debugging and performance analysis is missing. This hinders forensic analysis during "
+            "security incidents."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/lambda/latest/dg/services-xray.html",
+        ],
+    },
+    "CKV_AWS_51": {
+        "severity": "MEDIUM",
+        "category": "Supply Chain",
+        "title_tr": "ECR image scanning aktif değil",
+        "title_en": "Ensure ECR Image Tags are immutable",
+        "explanation_tr": (
+            "ECR repository'lerinde image_tag_mutability = 'IMMUTABLE' olmadığında, aynı tag "
+            "farklı image'lara işaret edebilir. Bu, supply chain saldırılarına ve "
+            "tekrarlanabilirlik sorunlarına yol açar. IMMUTABLE her zaman tercih edilmelidir."
+        ),
+        "explanation_en": (
+            "Without image_tag_mutability = 'IMMUTABLE' on ECR repositories, the same tag may "
+            "point to different images, causing supply chain attacks and reproducibility issues. "
+            "Always prefer IMMUTABLE."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html",
+        ],
+    },
+    "CKV_AWS_57": {
+        "severity": "CRITICAL",
+        "category": "Access Control",
+        "title_tr": "S3 bucket write erişimi public",
+        "title_en": "Ensure S3 bucket does not allow WRITE permissions to authenticated users",
+        "explanation_tr": (
+            "S3 bucket'a public write izni verilmesi, herhangi birinin (kötü amaçlı veya kazara) "
+            "objeleri silmesine, değiştirmesine veya bucket'ı zararlı içerik için kullanmasına izin verir. "
+            "Write erişimi sadece spesifik IAM principal'larla sınırlandırılmalıdır."
+        ),
+        "explanation_en": (
+            "Public write access on S3 buckets allows anyone (malicious or accidental) to delete, "
+            "modify objects, or use the bucket for harmful content. "
+            "Restrict write access to specific IAM principals only."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-best-practices.html",
+        ],
+    },
+    "CKV_AWS_61": {
+        "severity": "MEDIUM",
+        "category": "Identity & Access",
+        "title_tr": "IAM role için trust policy aşırı geniş",
+        "title_en": "Ensure IAM role allows only specific services or principals to assume it",
+        "explanation_tr": (
+            "IAM role'ün assume_role_policy'sinde Principal: '*' veya çok geniş Service tanımı "
+            "olduğunda, beklenmeyen AWS servislerinin veya hesapların role'ü üstlenmesine izin verir. "
+            "Trust policy en dar şekilde tanımlanmalıdır."
+        ),
+        "explanation_en": (
+            "An IAM role's assume_role_policy with Principal: '*' or overly broad Service "
+            "definitions allows unexpected AWS services or accounts to assume the role. "
+            "Define trust policies as narrowly as possible."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html",
+        ],
+    },
+    "CKV_AWS_79": {
+        "severity": "MEDIUM",
+        "category": "Network Security",
+        "title_tr": "EC2 instance IMDSv2 zorunlu değil",
+        "title_en": "Ensure Instance Metadata Service Version 2 (IMDSv2) is required",
+        "explanation_tr": (
+            "metadata_options.http_tokens = 'required' olmadığında IMDSv1 hala kullanılabilir. "
+            "IMDSv1, SSRF (Server-Side Request Forgery) saldırılarıyla EC2 credential'larının "
+            "çalınmasına izin verir (Capital One ihlali bu yöntemle yaşandı). IMDSv2 token-based "
+            "olduğu için bu saldırıları engeller."
+        ),
+        "explanation_en": (
+            "Without metadata_options.http_tokens = 'required', IMDSv1 remains usable. "
+            "IMDSv1 enables EC2 credential theft via SSRF attacks (the Capital One breach used this). "
+            "IMDSv2 is token-based and prevents such attacks."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html",
+        ],
+    },
+    "CKV_AWS_103": {
+        "severity": "HIGH",
+        "category": "Network Security",
+        "title_tr": "Load Balancer TLS 1.2'den eski protokol kullanıyor",
+        "title_en": "Ensure load balancer is using TLS 1.2",
+        "explanation_tr": (
+            "Load balancer listener'da TLS 1.0 veya 1.1 kullanmak, BEAST, POODLE gibi bilinen "
+            "saldırılara açıktır. Modern SSL policy'leri (ELBSecurityPolicy-TLS-1-2-2017-01 veya "
+            "daha yenisi) kullanılmalıdır."
+        ),
+        "explanation_en": (
+            "TLS 1.0 or 1.1 on load balancer listeners is vulnerable to known attacks like BEAST, "
+            "POODLE. Use modern SSL policies (ELBSecurityPolicy-TLS-1-2-2017-01 or newer)."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-https-listener.html",
+        ],
+    },
+    "CKV_AWS_115": {
+        "severity": "MEDIUM",
+        "category": "Resource Management",
+        "title_tr": "Lambda concurrent execution limit tanımlanmamış",
+        "title_en": "Ensure that AWS Lambda function is configured for function-level concurrent execution limit",
+        "explanation_tr": (
+            "reserved_concurrent_executions tanımlanmadığında, tek bir Lambda function tüm hesap "
+            "concurrency limit'ini tüketebilir. Bu, diğer function'ların throttle olmasına ve "
+            "potansiyel DoS durumuna yol açar."
+        ),
+        "explanation_en": (
+            "Without reserved_concurrent_executions, a single Lambda can consume the entire account "
+            "concurrency limit, causing other functions to throttle and potential DoS conditions."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html",
+        ],
+    },
+    "CKV_AWS_116": {
+        "severity": "MEDIUM",
+        "category": "Resource Management",
+        "title_tr": "Lambda dead letter queue tanımlanmamış",
+        "title_en": "Ensure that AWS Lambda function is configured for a Dead Letter Queue (DLQ)",
+        "explanation_tr": (
+            "Lambda'da DLQ tanımlanmadığında, başarısız async event'ler kaybolur. "
+            "Bu, kritik işlemlerin sessizce başarısız olmasına ve forensic analizin "
+            "imkansızlaşmasına yol açar."
+        ),
+        "explanation_en": (
+            "Without a DLQ configured for Lambda, failed async events are lost. "
+            "This causes critical operations to silently fail and makes forensic analysis impossible."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html",
+        ],
+    },
+    "CKV_AWS_117": {
+        "severity": "MEDIUM",
+        "category": "Network Security",
+        "title_tr": "Lambda VPC içinde çalışmıyor",
+        "title_en": "Ensure that AWS Lambda function is configured inside a VPC",
+        "explanation_tr": (
+            "Hassas backend kaynaklarına (RDS, ElastiCache vb.) erişen Lambda function'lar "
+            "VPC dışında çalışırsa, network isolation sağlanamaz. vpc_config bloğu ile "
+            "Lambda VPC içine alınmalıdır."
+        ),
+        "explanation_en": (
+            "Lambda functions accessing sensitive backend resources (RDS, ElastiCache, etc.) "
+            "outside a VPC lack network isolation. Use vpc_config block to place Lambda in a VPC."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc.html",
+        ],
+    },
+    "CKV_AWS_158": {
+        "severity": "HIGH",
+        "category": "Encryption",
+        "title_tr": "CloudWatch log group encryption yok",
+        "title_en": "Ensure that CloudWatch Log Group is encrypted by KMS",
+        "explanation_tr": (
+            "CloudWatch log group'larda kms_key_id tanımlanmadığında, loglar default şifreleme ile "
+            "saklanır. Hassas application logları için customer-managed KMS key ile encryption "
+            "ek bir güvenlik katmanı sağlar."
+        ),
+        "explanation_en": (
+            "Without kms_key_id on CloudWatch log groups, logs use default encryption. "
+            "For sensitive application logs, customer-managed KMS key encryption provides "
+            "an additional security layer."
+        ),
+        "references": [
+            "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/encrypt-log-data-kms.html",
         ],
     },
 }
