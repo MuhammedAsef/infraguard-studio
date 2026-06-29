@@ -108,7 +108,7 @@ function App() {
       <div className="relative z-10">
         <Header />
 
-        <main className="max-w-7xl mx-auto px-6 py-12">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           {/* Hero */}
           <div className="text-center mb-12">
             {/* Badge */}
@@ -117,46 +117,46 @@ function App() {
               <span>Live · DevSecOps Portfolio Project</span>
             </div>
 
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 leading-tight">
               IaC Güvenlik Açıklarını{' '}
               <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
                 Anında Tespit Edin
               </span>
             </h2>
 
-            <p className="text-slate-400 max-w-2xl mx-auto text-lg leading-relaxed">
+            <p className="text-slate-400 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed px-4 sm:px-0">
               Dockerfile, Kubernetes manifest ve Terraform dosyalarınızdaki güvenlik
               risklerini, <span className="text-slate-200">açıklamalı raporlar</span> ve{' '}
               <span className="text-slate-200">düzeltme önerileriyle</span> keşfedin.
             </p>
 
             {/* Stats */}
-            <div className="flex flex-wrap items-center justify-center gap-8 mt-8 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-4 sm:gap-8 mt-8 text-sm">
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-cyan-400 font-bold">3</span>
                 </div>
-                <span className="text-slate-400">Dosya Tipi</span>
+                <span className="text-slate-400 text-xs sm:text-sm">Dosya Tipi</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-blue-400 font-bold text-xs">1K+</span>
                 </div>
-                <span className="text-slate-400">Güvenlik Kuralı</span>
+                <span className="text-slate-400 text-xs sm:text-sm">Güvenlik Kuralı</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-purple-400 font-bold text-xs">AI</span>
                 </div>
-                <span className="text-slate-400">Akıllı Açıklama</span>
+                <span className="text-slate-400 text-xs sm:text-sm">Akıllı Açıklama</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <span className="text-slate-400">Otomatik Düzeltme</span>
+                <span className="text-slate-400 text-xs sm:text-sm">Otomatik Düzeltme</span>
               </div>
             </div>
           </div>
@@ -175,12 +175,12 @@ function App() {
           {/* İki sütunlu layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold">Kodunuzu Yapıştırın</h3>
+              <div className="flex items-center justify-between mb-3 gap-2">
+                <h3 className="text-base sm:text-lg font-semibold">Kodunuzu Yapıştırın</h3>
                 <button
                   onClick={handleScan}
                   disabled={isLoading}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium px-5 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-medium px-4 sm:px-5 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 text-sm sm:text-base"
                 >
                   {isLoading ? (
                     <>

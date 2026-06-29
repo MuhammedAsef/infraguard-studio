@@ -68,7 +68,7 @@ function FindingCard({ finding, originalCode, fileType }) {
   const hasFix = finding.fixed_code !== null && finding.fixed_code !== undefined
 
   return (
-    <div className={`group bg-slate-900/80 backdrop-blur border border-slate-800 border-l-4 ${style.border} ${style.glow} rounded-lg p-4 transition-all hover:border-slate-700 hover:-translate-y-0.5`}>
+    <div className={`group bg-slate-900/80 backdrop-blur border border-slate-800 border-l-4 ${style.border} ${style.glow} rounded-lg p-3 sm:p-4 transition-all hover:border-slate-700 hover:-translate-y-0.5`}>
       {/* Üst kısım: ikon + severity + meta */}
       <div className="flex items-start gap-3 mb-3">
         <div className={`flex-shrink-0 w-9 h-9 rounded-lg border ${style.iconBg} ${style.iconColor} flex items-center justify-center`}>
@@ -94,11 +94,11 @@ function FindingCard({ finding, originalCode, fileType }) {
               </span>
             )}
           </div>
-          <h4 className="text-white font-semibold leading-snug">{finding.title}</h4>
+          <h4 className="text-white font-semibold leading-snug text-sm sm:text-base break-words">{finding.title}</h4>
         </div>
       </div>
 
-      <p className="text-slate-400 text-sm leading-relaxed mb-3">{finding.explanation}</p>
+      <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-3">{finding.explanation}</p>
 
       <div className="flex items-center gap-2 text-xs">
         <span className="text-slate-500">Kategori:</span>
@@ -115,7 +115,7 @@ function FindingCard({ finding, originalCode, fileType }) {
         <div className="mt-3">
           <button
             onClick={() => setShowDiff(!showDiff)}
-            className="flex items-center gap-2 text-xs font-medium bg-gradient-to-r from-emerald-500/10 to-green-500/10 hover:from-emerald-500/20 hover:to-green-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-md transition-all hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.4)]"
+            className="flex items-center justify-center gap-2 text-xs font-medium bg-gradient-to-r from-emerald-500/10 to-green-500/10 hover:from-emerald-500/20 hover:to-green-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-2 sm:py-1.5 rounded-md transition-all hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.4)] w-full sm:w-auto"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
